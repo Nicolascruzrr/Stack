@@ -836,7 +836,7 @@ const PROJECTS = [
     title: "Sharon Nicole",
     client: "Sharon Nicole",
     overview:
-      "Una consultora de sueño infantil necesitaba un espacio tan cálido y claro como su método. Diseñamos una plataforma minimalista para cursos y videollamadas que transmite calma desde el primer scroll.",
+      "Consultora de sueño infantil. Cursos y videollamadas para mejorar el descanso de bebés y niños: rutinas, noches completas y acompañamiento respetuoso.",
     url: "https://sharonnicole.com",
     hero: { src: "img/sharon-cover.png", alt: "Sitio web de Sharon Nicole" },
     gallery: [
