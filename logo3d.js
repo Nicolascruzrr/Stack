@@ -225,8 +225,10 @@ export class StackLogo3D {
     this.rotTarget = { x: -0.08, y: 0.28 };
     this.velocity = { x: 0, y: 0 };
     this.dragging = false;
+    this.pendingDrag = false;
     this.activePointerId = null;
     this.lastPointer = { x: 0, y: 0 };
+    this.pointerOrigin = { x: 0, y: 0 };
     this.raycaster = new THREE.Raycaster();
     this.pointerNdc = new THREE.Vector2();
     this.running = false;
@@ -381,11 +383,32 @@ export class StackLogo3D {
   }
 
   _interactionEnabled() {
-    if (REDUCED_MOTION) return false;
-    // Touch / coarse pointers: never steal vertical swipes for logo orbit —
-    // otherwise the final STACK beat traps users before Proyectos.
-    if (this.isMobile || window.matchMedia("(pointer: coarse)").matches) return false;
-    return this.storyProgress <= 0.035 || this.storyProgress >= 0.975;
+    return !REDUCED_MOTION && (this.storyProgress <= 0.035 || this.storyProgress >= 0.975);
+  }
+
+  _clearPointerState() {
+    this.dragging = false;
+    this.pendingDrag = false;
+    this.activePointerId = null;
+    this.wrap.style.touchAction = "pan-y";
+    this.wrap.classList.remove("is-dragging");
+    this.wrap.style.cursor = this._interactionEnabled() ? "grab" : "default";
+  }
+
+  _beginOrbit(e) {
+    this.pendingDrag = false;
+    this.dragging = true;
+    this.lastPointer = { x: e.clientX, y: e.clientY };
+    this.velocity.x = 0;
+    this.velocity.y = 0;
+    this.wrap.style.cursor = "grabbing";
+    this.wrap.style.touchAction = "none";
+    this.wrap.classList.add("is-dragging");
+    try {
+      this.wrap.setPointerCapture(e.pointerId);
+    } catch (_) {
+      /* Pointer capture is optional. */
+    }
   }
 
   _hitTest(clientX, clientY) {
@@ -407,6 +430,27 @@ export class StackLogo3D {
       this.mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.mouseTarget.y = (e.clientY / window.innerHeight) * 2 - 1;
 
+      // Touch: wait for axis intent so vertical swipes can leave toward Proyectos
+      // while horizontal swipes still orbit the logo.
+      if (
+        this.pendingDrag &&
+        e.pointerType === "touch" &&
+        e.pointerId === this.activePointerId
+      ) {
+        const dx = e.clientX - this.pointerOrigin.x;
+        const dy = e.clientY - this.pointerOrigin.y;
+        if (Math.hypot(dx, dy) < 12) return;
+
+        if (Math.abs(dy) > Math.abs(dx) * 1.1) {
+          this._clearPointerState();
+          return;
+        }
+
+        this._beginOrbit(e);
+        e.preventDefault();
+        return;
+      }
+
       if (this.dragging && e.pointerId === this.activePointerId) {
         const dx = e.clientX - this.lastPointer.x;
         const dy = e.clientY - this.lastPointer.y;
@@ -426,38 +470,35 @@ export class StackLogo3D {
     };
     this._onPointerDown = (e) => {
       if (!this._interactionEnabled()) return;
-      // Touch drag fights page scroll; orbit stays mouse/trackpad only.
-      if (e.pointerType === "touch") return;
       if (e.button !== undefined && e.button !== 0) return;
       if (!this._hitTest(e.clientX, e.clientY)) return;
 
-      this.dragging = true;
       this.activePointerId = e.pointerId;
+      this.pointerOrigin = { x: e.clientX, y: e.clientY };
       this.lastPointer = { x: e.clientX, y: e.clientY };
       this.velocity.x = 0;
       this.velocity.y = 0;
-      this.wrap.style.cursor = "grabbing";
-      this.wrap.style.touchAction = "none";
-      this.wrap.classList.add("is-dragging");
-      try {
-        this.wrap.setPointerCapture(e.pointerId);
-      } catch (_) {
-        /* Pointer capture is optional. */
+
+      if (e.pointerType === "touch") {
+        // Defer orbit until we know the gesture is horizontal.
+        this.pendingDrag = true;
+        this.dragging = false;
+        return;
       }
+
+      this._beginOrbit(e);
       e.preventDefault();
     };
     this._onPointerUp = (e) => {
-      if (!this.dragging || e.pointerId !== this.activePointerId) return;
-      this.dragging = false;
-      this.activePointerId = null;
-      this.wrap.style.touchAction = "pan-y";
-      this.wrap.classList.remove("is-dragging");
-      this.wrap.style.cursor = this._interactionEnabled() ? "grab" : "default";
-      try {
-        this.wrap.releasePointerCapture(e.pointerId);
-      } catch (_) {
-        /* Pointer may already be released. */
+      if (e.pointerId !== this.activePointerId) return;
+      if (this.pendingDrag || this.dragging) {
+        try {
+          this.wrap.releasePointerCapture(e.pointerId);
+        } catch (_) {
+          /* Pointer may already be released. */
+        }
       }
+      this._clearPointerState();
     };
     this._onResize = () => this.resize();
 
@@ -679,12 +720,8 @@ export class StackLogo3D {
         idleRoll
       );
     } else {
-      if (this.dragging) {
-        this.dragging = false;
-        this.activePointerId = null;
-        this.wrap.style.touchAction = "pan-y";
-        this.wrap.classList.remove("is-dragging");
-        this.wrap.style.cursor = "default";
+      if (this.dragging || this.pendingDrag) {
+        this._clearPointerState();
       }
       this.velocity.x = 0;
       this.velocity.y = 0;

@@ -90,6 +90,11 @@ function initSmoothScroll() {
     duration: 1.1,
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     smoothWheel: true,
+    // Mobile touch must go through Lenis (story pin uses touch-action:none),
+    // so exiting the logo beat feels like desktop smooth scroll into Proyectos.
+    syncTouch: true,
+    syncTouchLerp: 0.085,
+    touchMultiplier: 1.15,
     autoRaf: false,
     // Keep page Lenis from eating wheel/touch while the project modal scrolls.
     prevent: (node) => Boolean(node.closest?.("#projectModal")),
@@ -617,58 +622,30 @@ function initStoryScroll(logo, lenis) {
     });
   });
 
-  const scrollToY = (destination, duration, onComplete) => {
-    isStepping = true;
-    releaseTimer = window.setTimeout(releaseStep, Math.max(duration * 1000 + 400, 1200));
-
-    if (lenis) {
-      lenis.scrollTo(destination, {
-        duration,
-        easing: (t) => 1 - Math.pow(1 - t, 4),
-        lock: true,
-        force: true,
-        onComplete: () => {
-          releaseStep();
-          onComplete?.();
-        },
-      });
-    } else {
-      window.scrollTo({ top: destination, behavior: "smooth" });
-      window.setTimeout(() => {
-        releaseStep();
-        onComplete?.();
-      }, duration * 1000);
-    }
-  };
-
-  const exitStoryTowardWork = () => {
-    const work = document.getElementById("work");
-    const { end } = getBounds();
-    const destination = work
-      ? Math.max(work.offsetTop + 8, end + 32)
-      : end + Math.round(window.innerHeight * 0.45);
-    scrollToY(destination, window.matchMedia("(max-width: 860px)").matches ? 0.85 : 1);
-  };
-
   const moveOneStep = (direction) => {
     const { start, distance } = getBounds();
     const progress = clampValue((getScrollY() - start) / distance, 0, 1);
     activeStep = closestStep(progress);
     const nextStep = clampValue(activeStep + direction, 0, checkpoints.length - 1);
-    if (nextStep === activeStep) {
-      // Final logo beat: one more swipe drops into Proyectos instead of trapping.
-      if (direction > 0) {
-        exitStoryTowardWork();
-        return true;
-      }
-      return false;
-    }
+    if (nextStep === activeStep) return false;
 
     activeStep = nextStep;
-    scrollToY(
-      start + distance * checkpoints[activeStep],
-      window.matchMedia("(max-width: 860px)").matches ? 0.95 : 1.15
-    );
+    isStepping = true;
+    const destination = start + distance * checkpoints[activeStep];
+    releaseTimer = window.setTimeout(releaseStep, 1600);
+
+    if (lenis) {
+      lenis.scrollTo(destination, {
+        // Same easing/duration as desktop so mobile story beats feel identical.
+        duration: 1.15,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+        lock: true,
+        force: true,
+        onComplete: releaseStep,
+      });
+    } else {
+      window.scrollTo({ top: destination, behavior: "smooth" });
+    }
     return true;
   };
 
@@ -679,11 +656,6 @@ function initStoryScroll(logo, lenis) {
     return nextStep !== step;
   };
 
-  const workTop = () => {
-    const work = document.getElementById("work");
-    return work ? work.offsetTop : getBounds().end + window.innerHeight;
-  };
-
   window.addEventListener(
     "wheel",
     (event) => {
@@ -692,25 +664,14 @@ function initStoryScroll(logo, lenis) {
       const scrollY = getScrollY();
       const direction = Math.sign(event.deltaY);
       if (!direction || Math.abs(event.deltaY) < 6) return;
-      if (scrollY < start - 2) return;
-      if (scrollY > workTop() + 2) return;
-      if (direction < 0 && scrollY <= start + 2) return;
-
-      const inStory = scrollY <= end + 2;
-      // Gap between story release and Proyectos: don't trap upward scroll.
-      if (!inStory && direction < 0) return;
-
-      const canStep = inStory && canStepInDirection(scrollY, direction, start, distance);
-      const exitingToWork = direction > 0 && (!canStep || scrollY >= end - 2);
+      if (scrollY < start - 2 || scrollY > end + 2) return;
+      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
+      // Last/first beat: release to Lenis for the same smooth exit as desktop.
+      if (!canStepInDirection(scrollY, direction, start, distance)) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (isStepping) return;
-      if (exitingToWork) {
-        exitStoryTowardWork();
-        return;
-      }
-      if (canStep) moveOneStep(direction);
+      if (!isStepping) moveOneStep(direction);
     },
     { passive: false, capture: true }
   );
@@ -732,23 +693,12 @@ function initStoryScroll(logo, lenis) {
 
       const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
-      if (scrollY < start - 2) return;
-      if (scrollY > workTop() + 2) return;
-      if (direction < 0 && scrollY <= start + 2) return;
-
-      const inStory = scrollY <= end + 2;
-      if (!inStory && direction < 0) return;
-
-      const canStep = inStory && canStepInDirection(scrollY, direction, start, distance);
-      const exitingToWork = direction > 0 && (!canStep || scrollY >= end - 2);
+      if (scrollY < start - 2 || scrollY > end + 2) return;
+      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
+      if (!canStepInDirection(scrollY, direction, start, distance)) return;
 
       event.preventDefault();
-      if (isStepping) return;
-      if (exitingToWork) {
-        exitStoryTowardWork();
-        return;
-      }
-      if (canStep) moveOneStep(direction);
+      if (!isStepping) moveOneStep(direction);
     },
     { capture: true }
   );
@@ -769,8 +719,11 @@ function initStoryScroll(logo, lenis) {
       if (touchStartY === null) return;
       const currentY = event.touches[0]?.clientY;
       if (currentY === undefined) return;
+      // Logo is actively orbiting (horizontal drag) — don't fight it.
       if (document.getElementById("storyCanvasWrap")?.classList.contains("is-dragging")) {
         touchStartY = currentY;
+        event.preventDefault();
+        event.stopImmediatePropagation();
         return;
       }
 
@@ -780,30 +733,27 @@ function initStoryScroll(logo, lenis) {
 
       const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
-      if (scrollY < start - 4) return;
-      if (scrollY > workTop() + 4) return;
-      if (direction < 0 && scrollY <= start + 4) return;
+      if (scrollY < start - 4 || scrollY > end + 4) return;
 
-      const inStory = scrollY <= end + 4;
-      // Gap between story release and Proyectos: don't trap upward scroll.
-      if (!inStory && direction < 0) return;
+      const atStart = scrollY <= start + 4;
+      const atEnd = scrollY >= end - 4;
+      const leavingStory =
+        (direction < 0 && atStart) || (direction > 0 && atEnd);
+      const hasStep = canStepInDirection(scrollY, direction, start, distance);
 
-      const canStep = inStory && canStepInDirection(scrollY, direction, start, distance);
-      const exitingToWork = direction > 0 && (!canStep || scrollY >= end - 4);
+      // Same as desktop: at the story edge, let Lenis own the smooth scroll
+      // toward Proyectos (or back to the top) instead of trapping the gesture.
+      if (leavingStory || !hasStep) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      // One swipe = one story beat, or exit into Proyectos after the logo.
+      // One swipe = one story beat. Fast flicks cannot skip panels.
       if (gestureConsumed || isStepping) return;
-      if (Math.abs(delta) < 32) return;
-
-      gestureConsumed = true;
-      if (exitingToWork) {
-        exitStoryTowardWork();
-        return;
+      if (Math.abs(delta) >= 32) {
+        gestureConsumed = true;
+        moveOneStep(direction);
       }
-      if (canStep) moveOneStep(direction);
     },
     { passive: false, capture: true }
   );
