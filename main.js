@@ -617,29 +617,58 @@ function initStoryScroll(logo, lenis) {
     });
   });
 
+  const scrollToY = (destination, duration, onComplete) => {
+    isStepping = true;
+    releaseTimer = window.setTimeout(releaseStep, Math.max(duration * 1000 + 400, 1200));
+
+    if (lenis) {
+      lenis.scrollTo(destination, {
+        duration,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+        lock: true,
+        force: true,
+        onComplete: () => {
+          releaseStep();
+          onComplete?.();
+        },
+      });
+    } else {
+      window.scrollTo({ top: destination, behavior: "smooth" });
+      window.setTimeout(() => {
+        releaseStep();
+        onComplete?.();
+      }, duration * 1000);
+    }
+  };
+
+  const exitStoryTowardWork = () => {
+    const work = document.getElementById("work");
+    const { end } = getBounds();
+    const destination = work
+      ? Math.max(work.offsetTop + 8, end + 32)
+      : end + Math.round(window.innerHeight * 0.45);
+    scrollToY(destination, window.matchMedia("(max-width: 860px)").matches ? 0.85 : 1);
+  };
+
   const moveOneStep = (direction) => {
     const { start, distance } = getBounds();
     const progress = clampValue((getScrollY() - start) / distance, 0, 1);
     activeStep = closestStep(progress);
     const nextStep = clampValue(activeStep + direction, 0, checkpoints.length - 1);
-    if (nextStep === activeStep) return false;
+    if (nextStep === activeStep) {
+      // Final logo beat: one more swipe drops into Proyectos instead of trapping.
+      if (direction > 0) {
+        exitStoryTowardWork();
+        return true;
+      }
+      return false;
+    }
 
     activeStep = nextStep;
-    isStepping = true;
-    const destination = start + distance * checkpoints[activeStep];
-    releaseTimer = window.setTimeout(releaseStep, 1600);
-
-    if (lenis) {
-      lenis.scrollTo(destination, {
-        duration: window.matchMedia("(max-width: 860px)").matches ? 0.95 : 1.15,
-        easing: (t) => 1 - Math.pow(1 - t, 4),
-        lock: true,
-        force: true,
-        onComplete: releaseStep,
-      });
-    } else {
-      window.scrollTo({ top: destination, behavior: "smooth" });
-    }
+    scrollToY(
+      start + distance * checkpoints[activeStep],
+      window.matchMedia("(max-width: 860px)").matches ? 0.95 : 1.15
+    );
     return true;
   };
 
@@ -650,6 +679,11 @@ function initStoryScroll(logo, lenis) {
     return nextStep !== step;
   };
 
+  const workTop = () => {
+    const work = document.getElementById("work");
+    return work ? work.offsetTop : getBounds().end + window.innerHeight;
+  };
+
   window.addEventListener(
     "wheel",
     (event) => {
@@ -658,14 +692,25 @@ function initStoryScroll(logo, lenis) {
       const scrollY = getScrollY();
       const direction = Math.sign(event.deltaY);
       if (!direction || Math.abs(event.deltaY) < 6) return;
-      if (scrollY < start - 2 || scrollY > end + 2) return;
-      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
-      // Last/first beat already reached — do not trap scroll toward projects / top.
-      if (!canStepInDirection(scrollY, direction, start, distance)) return;
+      if (scrollY < start - 2) return;
+      if (scrollY > workTop() + 2) return;
+      if (direction < 0 && scrollY <= start + 2) return;
+
+      const inStory = scrollY <= end + 2;
+      // Gap between story release and Proyectos: don't trap upward scroll.
+      if (!inStory && direction < 0) return;
+
+      const canStep = inStory && canStepInDirection(scrollY, direction, start, distance);
+      const exitingToWork = direction > 0 && (!canStep || scrollY >= end - 2);
 
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (!isStepping) moveOneStep(direction);
+      if (isStepping) return;
+      if (exitingToWork) {
+        exitStoryTowardWork();
+        return;
+      }
+      if (canStep) moveOneStep(direction);
     },
     { passive: false, capture: true }
   );
@@ -687,12 +732,23 @@ function initStoryScroll(logo, lenis) {
 
       const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
-      if (scrollY < start - 2 || scrollY > end + 2) return;
-      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
-      if (!canStepInDirection(scrollY, direction, start, distance)) return;
+      if (scrollY < start - 2) return;
+      if (scrollY > workTop() + 2) return;
+      if (direction < 0 && scrollY <= start + 2) return;
+
+      const inStory = scrollY <= end + 2;
+      if (!inStory && direction < 0) return;
+
+      const canStep = inStory && canStepInDirection(scrollY, direction, start, distance);
+      const exitingToWork = direction > 0 && (!canStep || scrollY >= end - 2);
 
       event.preventDefault();
-      if (!isStepping) moveOneStep(direction);
+      if (isStepping) return;
+      if (exitingToWork) {
+        exitStoryTowardWork();
+        return;
+      }
+      if (canStep) moveOneStep(direction);
     },
     { capture: true }
   );
@@ -724,26 +780,30 @@ function initStoryScroll(logo, lenis) {
 
       const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
-      if (scrollY < start - 4 || scrollY > end + 4) return;
+      if (scrollY < start - 4) return;
+      if (scrollY > workTop() + 4) return;
+      if (direction < 0 && scrollY <= start + 4) return;
 
-      const atStart = scrollY <= start + 4;
-      const atEnd = scrollY >= end - 4;
-      const leavingStory =
-        (direction < 0 && atStart) || (direction > 0 && atEnd);
+      const inStory = scrollY <= end + 4;
+      // Gap between story release and Proyectos: don't trap upward scroll.
+      if (!inStory && direction < 0) return;
 
-      // Free scroll when leaving the story, or when no narrative step remains
-      // in that direction (fixes mobile trap after the final logo beat).
-      if (leavingStory || !canStepInDirection(scrollY, direction, start, distance)) return;
+      const canStep = inStory && canStepInDirection(scrollY, direction, start, distance);
+      const exitingToWork = direction > 0 && (!canStep || scrollY >= end - 4);
 
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      // One swipe = one story beat. Fast flicks cannot skip panels.
+      // One swipe = one story beat, or exit into Proyectos after the logo.
       if (gestureConsumed || isStepping) return;
-      if (Math.abs(delta) >= 32) {
-        gestureConsumed = true;
-        moveOneStep(direction);
+      if (Math.abs(delta) < 32) return;
+
+      gestureConsumed = true;
+      if (exitingToWork) {
+        exitStoryTowardWork();
+        return;
       }
+      if (canStep) moveOneStep(direction);
     },
     { passive: false, capture: true }
   );

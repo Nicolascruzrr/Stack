@@ -381,7 +381,11 @@ export class StackLogo3D {
   }
 
   _interactionEnabled() {
-    return !REDUCED_MOTION && (this.storyProgress <= 0.035 || this.storyProgress >= 0.975);
+    if (REDUCED_MOTION) return false;
+    // Touch / coarse pointers: never steal vertical swipes for logo orbit —
+    // otherwise the final STACK beat traps users before Proyectos.
+    if (this.isMobile || window.matchMedia("(pointer: coarse)").matches) return false;
+    return this.storyProgress <= 0.035 || this.storyProgress >= 0.975;
   }
 
   _hitTest(clientX, clientY) {
@@ -422,6 +426,8 @@ export class StackLogo3D {
     };
     this._onPointerDown = (e) => {
       if (!this._interactionEnabled()) return;
+      // Touch drag fights page scroll; orbit stays mouse/trackpad only.
+      if (e.pointerType === "touch") return;
       if (e.button !== undefined && e.button !== 0) return;
       if (!this._hitTest(e.clientX, e.clientY)) return;
 
