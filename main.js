@@ -643,16 +643,25 @@ function initStoryScroll(logo, lenis) {
     return true;
   };
 
+  const canStepInDirection = (scrollY, direction, start, distance) => {
+    const progress = clampValue((scrollY - start) / distance, 0, 1);
+    const step = closestStep(progress);
+    const nextStep = clampValue(step + direction, 0, checkpoints.length - 1);
+    return nextStep !== step;
+  };
+
   window.addEventListener(
     "wheel",
     (event) => {
       if (body.classList.contains("modal-open")) return;
-      const { start, end } = getBounds();
+      const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
       const direction = Math.sign(event.deltaY);
       if (!direction || Math.abs(event.deltaY) < 6) return;
       if (scrollY < start - 2 || scrollY > end + 2) return;
       if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
+      // Last/first beat already reached — do not trap scroll toward projects / top.
+      if (!canStepInDirection(scrollY, direction, start, distance)) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -676,10 +685,11 @@ function initStoryScroll(logo, lenis) {
           : 0;
       if (!direction) return;
 
-      const { start, end } = getBounds();
+      const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
       if (scrollY < start - 2 || scrollY > end + 2) return;
       if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
+      if (!canStepInDirection(scrollY, direction, start, distance)) return;
 
       event.preventDefault();
       if (!isStepping) moveOneStep(direction);
@@ -710,7 +720,9 @@ function initStoryScroll(logo, lenis) {
 
       const delta = touchStartY - currentY;
       const direction = Math.sign(delta);
-      const { start, end } = getBounds();
+      if (!direction) return;
+
+      const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
       if (scrollY < start - 4 || scrollY > end + 4) return;
 
@@ -719,14 +731,15 @@ function initStoryScroll(logo, lenis) {
       const leavingStory =
         (direction < 0 && atStart) || (direction > 0 && atEnd);
 
-      // Allow native scroll only when leaving the story section.
-      if (leavingStory && !isStepping) return;
+      // Free scroll when leaving the story, or when no narrative step remains
+      // in that direction (fixes mobile trap after the final logo beat).
+      if (leavingStory || !canStepInDirection(scrollY, direction, start, distance)) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
 
       // One swipe = one story beat. Fast flicks cannot skip panels.
-      if (gestureConsumed || isStepping || !direction) return;
+      if (gestureConsumed || isStepping) return;
       if (Math.abs(delta) >= 32) {
         gestureConsumed = true;
         moveOneStep(direction);
