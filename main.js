@@ -108,6 +108,28 @@ function initSmoothScroll() {
   return lenis;
 }
 
+function initAnchorScroll(lenis) {
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+    const href = link.getAttribute("href");
+    if (!href || href === "#" || link.hasAttribute("data-story-progress")) return;
+    const target = document.querySelector(href);
+    if (!target) return;
+
+    event.preventDefault();
+    if (lenis) {
+      lenis.scrollTo(target, {
+        offset: -20,
+        duration: 1.15,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+      });
+    } else {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+}
+
 /* ---------------------------------------------------------
    Navigation: scroll state, mobile menu
    --------------------------------------------------------- */
@@ -557,9 +579,9 @@ function initStoryScroll(logo, lenis) {
     if (progress < 0.2) return null;
     if (progress < 0.34) return "about";
     if (progress < 0.43) return null;
-    if (progress < 0.57) return "services";
+    if (progress < 0.57) return "goals";
     if (progress < 0.66) return null;
-    if (progress < 0.8) return "why";
+    if (progress < 0.8) return "contact";
     return null;
   };
 
@@ -1221,6 +1243,7 @@ function initProjectModal(lenis) {
   const storyLogo = initStoryLogo();
 
   initNav();
+  initAnchorScroll(lenis);
   initParticles();
   initReveals();
   initStoryScroll(storyLogo, lenis);

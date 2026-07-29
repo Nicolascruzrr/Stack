@@ -176,7 +176,6 @@ section{position:relative;z-index:var(--z-content);}
   display:flex;align-items:center;gap:2.5rem;
 }
 .nav__logo{display:flex;align-items:center;gap:.65rem;margin-right:auto;flex-shrink:0;}
-
 .nav__toggle{
   width:44px;height:44px;
   display:flex;align-items:center;justify-content:center;
@@ -335,7 +334,7 @@ section{position:relative;z-index:var(--z-content);}
    ============================================================ */
 .btn{
   display:inline-flex;align-items:center;gap:.55rem;
-  padding:.85rem 1.5rem;border-radius:999px;
+  padding:.85rem 1.5rem;border-radius:4px;
   font-size:.92rem;font-weight:600;white-space:nowrap;
   transition:transform .3s var(--ease-out), background .3s, color .3s, box-shadow .3s;
 }
@@ -425,15 +424,22 @@ section.section-pad{padding:clamp(5rem,10vw,9rem) 0;}
   transition:opacity .55s var(--ease-out), transform .7s var(--ease-out);
 }
 .story__panel[data-panel="about"],
-.story__panel[data-panel="why"]{
+.story__panel[data-panel="contact"]{
   right:var(--edge);
 }
-.story__panel[data-panel="services"]{
+.story__panel[data-panel="goals"]{
   left:var(--edge);
 }
 .story__panel.is-active{
   opacity:1;
   transform:translateY(-50%);
+}
+.story__panel.is-active .story__cta{
+  pointer-events:auto;
+}
+.story__cta{
+  align-self:flex-start;
+  margin-top:.35rem;
 }
 .story__eyebrow{
   color:var(--grey-400);
@@ -797,7 +803,7 @@ section.section-pad{padding:clamp(5rem,10vw,9rem) 0;}
   gap:.55rem;
   width:fit-content;
   padding:.8rem 1.6rem;
-  border-radius:999px;
+  border-radius:4px;
   background:var(--white);
   color:var(--black);
   font-size:.9rem;
