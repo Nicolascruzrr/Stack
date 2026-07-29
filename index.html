@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stack — Agencia Web en República Dominicana</title>
+<meta name="theme-color" content="#0a0a0a">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="assets/images/favicon.png">
+
+<!-- Fonts: Cabinet Grotesk (display) + General Sans (body) via Fontshare -->
+<link rel="preconnect" href="https://cdn.fontshare.com">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500,400&f[]=general-sans@700,600,500,400&display=swap">
+
+<!-- Phosphor Icons (regular weight) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+
+<!-- Lenis smooth scroll base styles -->
+<link rel="stylesheet" href="https://unpkg.com/lenis@1.3.25/dist/lenis.css">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<!-- Preloader -->
+<div class="preloader" id="preloader" aria-hidden="true">
+  <div class="preloader__mark" aria-hidden="true">
+    <img src="assets/images/stack-mark-white.png" alt="" width="411" height="429">
+  </div>
+</div>
+
+<!-- Fixed atmosphere layers -->
+<canvas id="bgParticles" class="bg-particles" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- Navigation -->
+<header class="nav" id="siteNav">
+  <div class="nav__inner">
+    <a href="#main" class="nav__logo" aria-label="Stack, inicio">
+      <img class="nav__brand-image" src="assets/images/stack-logo-white.png" alt="" width="756" height="190">
+    </a>
+
+    <button class="nav__toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu">
+      <span class="nav__toggle-lines" aria-hidden="true">
+        <span></span>
+        <span></span>
+      </span>
+    </button>
+  </div>
+
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <div class="mobile-menu__panel">
+      <div class="mobile-menu__content">
+        <p class="mobile-menu__eyebrow">Menú</p>
+
+        <nav class="mobile-menu__nav" aria-label="Principal">
+          <a class="mobile-menu__link" href="#main">
+            <span>Inicio</span>
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+          <a class="mobile-menu__link" href="#story" data-story-progress="0.27">
+            <span>Nosotros</span>
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+          <a class="mobile-menu__link" href="#story" data-story-progress="0.5">
+            <span>Servicios</span>
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+          <a class="mobile-menu__link" href="#work">
+            <span>Proyectos</span>
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+          <a class="mobile-menu__link" href="#contact">
+            <span>Planes</span>
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </nav>
+
+        <div class="mobile-menu__studio">
+          <img class="mobile-menu__brand-logo" src="assets/images/stack-logo-white.png" alt="STACK" width="756" height="190">
+          <span>Santo Domingo, República Dominicana</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- 3D LOGO STORY -->
+  <section class="story" id="story" aria-label="Historia de Stack">
+    <div class="story__pin">
+      <div class="story__stage">
+        <div class="story__canvas-wrap" id="storyCanvasWrap">
+          <canvas id="storyCanvas" aria-hidden="true"></canvas>
+        </div>
+
+        <div class="story__panels" aria-live="polite">
+          <article class="story__panel" data-panel="about">
+            <p class="story__eyebrow">01</p>
+            <h2 class="story__title">¿Qué es STACK?</h2>
+            <p class="story__body">STACK es una agencia digital premium en República Dominicana. Creamos sitios que unen estrategia, diseño y tecnología.</p>
+          </article>
+
+          <article class="story__panel" data-panel="services">
+            <p class="story__eyebrow">02</p>
+            <h2 class="story__title">Qué hacemos</h2>
+            <ul class="story__list">
+              <li>Diseño web</li>
+              <li>Desarrollo web</li>
+              <li>Animaciones</li>
+              <li>Optimización</li>
+            </ul>
+          </article>
+
+          <article class="story__panel" data-panel="why">
+            <p class="story__eyebrow">03</p>
+            <h2 class="story__title">Por qué STACK</h2>
+            <p class="story__body">No diseñamos sitios web. Construimos experiencias digitales que se recuerdan. Cada píxel tiene propósito. Cada interacción tiene intención.</p>
+          </article>
+        </div>
+
+        <div class="story__meta meta__grid" aria-label="Información del estudio">
+          <div class="meta__item">
+            <span class="meta__label">Location</span>
+            <p class="meta__value">Santo Domingo</p>
+          </div>
+          <div class="meta__item">
+            <span class="meta__label">Somos</span>
+            <p class="meta__value">Web Agency</p>
+          </div>
+          <div class="meta__item">
+            <span class="meta__label">Desde</span>
+            <p class="meta__value">Est. 2026</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED PROJECTS -->
+  <section class="work" id="work" aria-labelledby="workHeading">
+    <div class="work__pin" id="workPin">
+      <div class="section-head work__head">
+        <h2 class="section-head__title" id="workHeading" data-reveal-text>Proyectos</h2>
+      </div>
+
+      <div class="work__viewport">
+        <div class="work__track" id="workTrack">
+          <article class="work__card" data-project-id="sharon">
+            <div class="work__media">
+              <img src="img/sharon-cover.png" alt="Sitio web de Sharon Nicole presentado en una laptop" loading="lazy" width="1024" height="683">
+            </div>
+            <div class="work__meta">
+              <div>
+                <h3>Sharon Nicole</h3>
+                <p>Consultora de sueño infantil. Cursos y videollamadas para mejorar el descanso de bebés y niños.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="work__card" data-project-id="caribbean">
+            <div class="work__media">
+              <img src="img/caribbean-cover.jpg" alt="Sitio web de Caribbean Buildings Construction en un monitor" loading="lazy" width="1024" height="683">
+            </div>
+            <div class="work__meta">
+              <div>
+                <h3>Caribbean Buildings Construction</h3>
+                <p>Empresa dedicada al diseño y construcción de modernas y lujosas torres residenciales en la República Dominicana.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="work__card" data-project-id="abejitas">
+            <div class="work__media">
+              <img src="img/abejitas-cover.jpg" alt="Sitio web de Abejitas Veterinaria presentado en una laptop" loading="lazy" width="1024" height="683">
+            </div>
+            <div class="work__meta">
+              <div>
+                <h3>Abejitas Veterinaria</h3>
+                <p>Veterinaria en Santo Domingo. Consultas, vacunas, cirugía, laboratorio y hotel para mascotas.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT / PLANES -->
+  <section class="contact" id="contact" aria-labelledby="contactHeading">
+    <div class="contact__inner">
+      <div class="contact__intro">
+        <h2 class="contact__heading" id="contactHeading" data-reveal-text>Escoge el mejor para ti</h2>
+        <p class="contact__subtext" data-reveal>Paquetes claros para páginas web. Elige el alcance; nosotros nos encargamos del diseño, el desarrollo y la entrega.</p>
+      </div>
+
+      <div class="plans" data-reveal aria-label="Planes de páginas web">
+        <article class="plan">
+          <header class="plan__header">
+            <h3 class="plan__name">Personal</h3>
+            <p class="plan__desc">Ideal para negocios y emprendedores que quieren establecer su presencia online.</p>
+          </header>
+          <ul class="plan__features">
+            <li><i class="ph ph-check" aria-hidden="true"></i>Landing Page 5 secciones</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Diseño Personalizado</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Diseño Responsive</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Formulario de Contacto</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Botón de WhatsApp</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Optimización básica de velocidad</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>SSL</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Configuración de Dominio</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Configuración de Hosting</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Integración de Redes Sociales</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>SEO Básico</li>
+          </ul>
+          <a class="btn btn--nav plan__cta" href="mailto:hello@stackstudio.do?subject=Plan%20Personal%20—%20Página%20web">
+            Solicitar Personal
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </article>
+
+        <article class="plan plan--featured">
+          <header class="plan__header">
+            <h3 class="plan__name">Business</h3>
+            <p class="plan__desc">Ideal para quienes quieren vender cursos, guías o productos digitales directamente desde su página.</p>
+          </header>
+          <ul class="plan__features">
+            <li><i class="ph ph-check" aria-hidden="true"></i><strong class="plan__highlight">Todo lo de Personal</strong></li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Sitio web multipágina — Hasta 5 páginas</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Animaciones y microinteracciones</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Pagos y checkout con PayPal</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Entrega automática del producto tras el pago</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Formulario para captar clientes potenciales</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Agendar llamadas/reuniones</li>
+          </ul>
+          <a class="btn btn--primary plan__cta" href="mailto:hello@stackstudio.do?subject=Plan%20Business%20—%20Página%20web">
+            Solicitar Business
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </article>
+
+        <article class="plan">
+          <header class="plan__header">
+            <h3 class="plan__name">Premium</h3>
+            <p class="plan__desc">Ideal para marcas que quieren crear una experiencia única.</p>
+          </header>
+          <ul class="plan__features">
+            <li><i class="ph ph-check" aria-hidden="true"></i><strong class="plan__highlight">Todo lo de Business</strong></li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Elementos 3D personalizados</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Animaciones Avanzadas</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Interacciones personalizadas</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Efectos de scroll</li>
+          </ul>
+          <a class="btn btn--nav plan__cta" href="mailto:hello@stackstudio.do?subject=Plan%20Premium%20—%20Página%20web">
+            Solicitar Premium
+            <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer" id="footer">
+  <div class="footer__top">
+    <img class="footer__brand-image" src="assets/images/stack-logo-white.png" alt="STACK" width="756" height="190" loading="lazy">
+  </div>
+
+  <div class="footer__grid">
+    <div class="footer__col">
+      <span class="footer__col-title">Contacto</span>
+      <a href="mailto:hello@stackstudio.do">hello@stackstudio.do</a>
+      <a href="tel:+18095550142">+1 (809) 555-0142</a>
+      <span>Santo Domingo, República Dominicana</span>
+    </div>
+
+    <div class="footer__col footer__col--social">
+      <span class="footer__col-title">Síguenos</span>
+      <div class="footer__social">
+        <a href="https://instagram.com/stackstudio" aria-label="Stack en Instagram" target="_blank" rel="noopener"><i class="ph ph-instagram-logo" aria-hidden="true"></i></a>
+        <a href="https://linkedin.com/company/stackstudio" aria-label="Stack en LinkedIn" target="_blank" rel="noopener"><i class="ph ph-linkedin-logo" aria-hidden="true"></i></a>
+        <a href="https://behance.net/stackstudio" aria-label="Stack en Behance" target="_blank" rel="noopener"><i class="ph ph-behance-logo" aria-hidden="true"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer__bottom">
+    <span>&copy; 2026 STACK. Todos los derechos reservados.</span>
+    <div class="footer__legal">
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+    </div>
+  </div>
+</footer>
+
+<!-- PROJECT MODAL - immersive editorial case-study layer -->
+<div class="pm" id="projectModal" aria-hidden="true">
+  <div class="pm__backdrop" data-modal-close></div>
+
+  <div class="pm__stage" id="pmStage" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+    <button class="pm__close" type="button" data-modal-close aria-label="Cerrar caso de estudio">
+      <i class="ph ph-x" aria-hidden="true"></i>
+    </button>
+
+    <div class="pm__scroll" id="pmScroll" data-lenis-prevent>
+      <div class="pm__scroll-inner" id="pmScrollInner">
+        <div class="pm__hero" id="pmHero">
+          <div class="pm__hero-frame" id="pmHeroFrame">
+            <img id="pmHeroImage" alt="">
+          </div>
+          <div class="pm__hero-caption">
+            <p class="pm__eyebrow">
+              <span id="pmCategory"></span>
+              <span class="pm__eyebrow-sep" aria-hidden="true">—</span>
+              <span id="pmYear"></span>
+            </p>
+            <h2 class="pm__title" id="pmTitle"></h2>
+          </div>
+        </div>
+
+        <div class="pm__content">
+          <div class="pm__copy">
+            <p class="pm__overview" id="pmOverview"></p>
+            <a class="pm__link" id="pmLink" target="_blank" rel="noopener">
+              <span>Visitar web</span>
+              <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+            </a>
+          </div>
+
+          <dl class="pm__facts">
+            <div class="pm__fact">
+              <dt>Cliente</dt>
+              <dd id="pmClient"></dd>
+            </div>
+            <div class="pm__fact">
+              <dt>Servicios</dt>
+              <dd id="pmServices"></dd>
+            </div>
+            <div class="pm__fact">
+              <dt>Tecnología</dt>
+              <dd id="pmTechnology"></dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="pm__gallery" id="pmGallery"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vendor: Lenis + GSAP (global scripts, no bundler needed) -->
+<script src="https://unpkg.com/lenis@1.3.25/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/Flip.min.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>
