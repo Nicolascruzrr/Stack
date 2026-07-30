@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -229,10 +229,10 @@
             <li><i class="ph ph-check" aria-hidden="true"></i>Integración de Redes Sociales</li>
             <li><i class="ph ph-check" aria-hidden="true"></i>Animaciones básicas</li>
           </ul>
-          <button class="btn btn--nav plan__cta" type="button" data-plan="Personal">
+          <a class="btn btn--nav plan__cta" href="https://wa.me/18293673951?text=%C2%A1Hola%21%20Me%20interesa%20el%20Plan%20Personal.%20%F0%9F%91%8B" target="_blank" rel="noopener noreferrer">
             Solicitar Personal
             <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-          </button>
+          </a>
         </article>
 
         <article class="plan plan--featured">
@@ -257,10 +257,10 @@
             <li><i class="ph ph-check" aria-hidden="true"></i>Formulario para captar clientes potenciales</li>
             <li><i class="ph ph-check" aria-hidden="true"></i>Agendar llamadas/reuniones</li>
           </ul>
-          <button class="btn btn--primary plan__cta" type="button" data-plan="Business">
+          <a class="btn btn--primary plan__cta" href="https://wa.me/18293673951?text=%C2%A1Hola%21%20Me%20interesa%20el%20Plan%20Business.%20%F0%9F%91%8B" target="_blank" rel="noopener noreferrer">
             Solicitar Business
             <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-          </button>
+          </a>
         </article>
 
         <article class="plan">
@@ -283,10 +283,10 @@
             <li><i class="ph ph-check" aria-hidden="true"></i>Interacciones personalizadas</li>
             <li><i class="ph ph-check" aria-hidden="true"></i>Efectos de scroll</li>
           </ul>
-          <button class="btn btn--nav plan__cta" type="button" data-plan="Premium">
+          <a class="btn btn--nav plan__cta" href="https://wa.me/18293673951?text=%C2%A1Hola%21%20Me%20interesa%20el%20Plan%20Premium.%20%F0%9F%91%8B" target="_blank" rel="noopener noreferrer">
             Solicitar Premium
             <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-          </button>
+          </a>
         </article>
       </div>
     </div>
@@ -308,7 +308,7 @@
       <span>Santo Domingo, República Dominicana</span>
     </div>
 
-    <div class="footer__col footer__col--social">
+    <div class="footer__col">
       <span class="footer__col-title">Síguenos</span>
       <div class="footer__social">
         <a href="https://instagram.com/stackstudio" aria-label="Stack en Instagram" target="_blank" rel="noopener"><i class="ph ph-instagram-logo" aria-hidden="true"></i></a>
@@ -373,157 +373,6 @@
         </div>
 
         <div class="pm__gallery" id="pmGallery"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- SOLICITUD MODAL — mismo lenguaje visual que el modal de proyectos -->
-<div class="sm" id="solicitudModal" aria-hidden="true">
-  <div class="sm__backdrop" data-solicitud-close></div>
-
-  <div
-    class="sm__stage"
-    id="smStage"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="solicitudHeading"
-  >
-    <button class="sm__close" type="button" data-solicitud-close aria-label="Cerrar formulario">
-      <i class="ph ph-x" aria-hidden="true"></i>
-    </button>
-
-    <div class="sm__scroll" id="smScroll" data-lenis-prevent>
-      <div class="sm__body">
-
-        <!-- Vista del formulario -->
-        <div class="sm__form-view" id="solicitudFormView">
-          <div class="sm__main">
-            <header class="sm__intro">
-              <p class="sm__eyebrow">Solicitud</p>
-              <h2 class="sm__heading" id="solicitudHeading">Cuéntanos tu proyecto</h2>
-              <p class="sm__subtext">Completa el formulario y te respondemos con el siguiente paso.</p>
-              <p class="sm__plan-badge" id="planBadge" hidden>
-                Plan seleccionado: <strong id="planBadgeLabel"></strong>
-              </p>
-            </header>
-
-            <!--
-              FORMSPREE — dónde pegar tu endpoint:
-              1. Crea una cuenta en https://formspree.io
-              2. Crea un formulario nuevo y copia la URL (ej. https://formspree.io/f/xxxxxxxx)
-              3. Pégala abajo en el atributo action="" de este <form>
-            -->
-            <form
-              class="sm__form"
-              id="contactForm"
-              action="https://formspree.io/f/TU_ENDPOINT_AQUI"
-              method="POST"
-              novalidate
-            >
-              <!-- Campo oculto: se rellena al hacer clic en "Solicitar [Plan]" -->
-              <input type="hidden" name="plan" id="planField" value="" required>
-
-              <div class="field">
-                <label class="field__label" for="nombre">Nombre</label>
-                <input
-                  class="field__input"
-                  type="text"
-                  id="nombre"
-                  name="nombre"
-                  autocomplete="name"
-                  required
-                  placeholder="Tu nombre"
-                >
-              </div>
-
-              <div class="field">
-                <label class="field__label" for="negocio">Nombre del negocio</label>
-                <input
-                  class="field__input"
-                  type="text"
-                  id="negocio"
-                  name="negocio"
-                  autocomplete="organization"
-                  required
-                  placeholder="Tu negocio o marca"
-                >
-              </div>
-
-              <div class="field">
-                <label class="field__label" for="descripcion">¿Qué necesitas?</label>
-                <textarea
-                  class="field__input field__input--textarea"
-                  id="descripcion"
-                  name="descripcion"
-                  rows="3"
-                  required
-                  maxlength="400"
-                  placeholder="Breve descripción de lo que buscas"
-                ></textarea>
-              </div>
-
-              <p class="sm__error" id="formError" role="alert" hidden></p>
-
-              <button class="btn btn--primary btn--block sm__submit" type="submit" id="formSubmit">
-                Enviar solicitud
-                <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-              </button>
-            </form>
-          </div>
-
-          <aside class="sm__aside" aria-label="Qué sigue después de solicitar">
-            <p class="sm__eyebrow">Qué sigue</p>
-            <h3 class="sm__aside-title">Del mensaje al lanzamiento</h3>
-            <ul class="sm__bullets">
-              <li>
-                <i class="ph ph-check" aria-hidden="true"></i>
-                <span>Te respondemos en menos de 24 horas</span>
-              </li>
-              <li>
-                <i class="ph ph-check" aria-hidden="true"></i>
-                <span>Confirmamos alcance, plazos y entregables</span>
-              </li>
-              <li>
-                <i class="ph ph-check" aria-hidden="true"></i>
-                <span>Diseño personalizado para tu marca</span>
-              </li>
-              <li>
-                <i class="ph ph-check" aria-hidden="true"></i>
-                <span>Desarrollo, dominio, hosting y SSL</span>
-              </li>
-              <li>
-                <i class="ph ph-check" aria-hidden="true"></i>
-                <span>Entrega lista para publicar y vender</span>
-              </li>
-            </ul>
-          </aside>
-        </div>
-
-        <!-- Vista de agradecimiento (tras envío exitoso) -->
-        <div class="sm__thanks" id="solicitudThanks" hidden tabindex="-1">
-          <p class="sm__eyebrow">Listo</p>
-          <h2 class="sm__heading">Gracias</h2>
-          <p class="sm__subtext">
-            Recibimos tu mensaje. Continúa por WhatsApp para agilizar la conversación con tus datos ya listos.
-          </p>
-          <!--
-            WHATSAPP (wa.me) — dónde pegar tu número:
-            Formato internacional sin + ni espacios, ej. 18095551234
-            Se usa en main.js (constante WHATSAPP_NUMBER).
-          -->
-          <a
-            class="btn btn--primary btn--block sm__whatsapp"
-            id="whatsappCta"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Continuar en WhatsApp
-            <i class="ph ph-whatsapp-logo" aria-hidden="true"></i>
-          </a>
-        </div>
-
       </div>
     </div>
   </div>

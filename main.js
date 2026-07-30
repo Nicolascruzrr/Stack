@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    STACK - main interaction layer
    Lenis + GSAP ScrollTrigger orchestration, story logo,
    particles, reveals, mobile nav.
@@ -6,7 +6,6 @@
 import { initStoryLogo } from "./logo3d.js";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const html = document.documentElement;
 const body = document.body;
 const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -18,8 +17,6 @@ gsap.registerPlugin(ScrollTrigger);
 function runPreloader() {
   return new Promise((resolve) => {
     const preloader = document.getElementById("preloader");
-    const countEl = document.getElementById("preloaderCount");
-
     const timeout = (ms) => new Promise((res) => setTimeout(res, ms));
 
     // Only gate on critical above-the-fold assets; lazy-loaded imagery
@@ -49,34 +46,9 @@ function runPreloader() {
       return;
     }
 
-    let display = 0;
-    const minDuration = 1200;
-    const start = performance.now();
-
-    function tick(now) {
-      const elapsed = now - start;
-      const timeProgress = Math.min(elapsed / minDuration, 1);
-      const target = Math.round(timeProgress * 92);
-      if (target > display) display = target;
-      if (countEl) countEl.textContent = display;
-
-      if (elapsed >= minDuration) {
-        assetsReady.then(() => {
-          const settleStart = performance.now();
-          function settle(t) {
-            const p = Math.min((t - settleStart) / 260, 1);
-            display = Math.round(92 + p * 8);
-            if (countEl) countEl.textContent = display;
-            if (p < 1) requestAnimationFrame(settle);
-            else finish();
-          }
-          requestAnimationFrame(settle);
-        });
-        return;
-      }
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
+    Promise.all([assetsReady, timeout(1200)]).then(() => {
+      setTimeout(finish, 260);
+    });
   });
 }
 
@@ -97,7 +69,7 @@ function initSmoothScroll() {
     touchMultiplier: 1.15,
     autoRaf: false,
     // Keep page Lenis from eating wheel/touch while a modal scrolls.
-    prevent: (node) => Boolean(node.closest?.("#projectModal, #solicitudModal")),
+    prevent: (node) => Boolean(node.closest?.("#projectModal")),
   });
 
   lenis.on("scroll", ScrollTrigger.update);
@@ -113,13 +85,13 @@ function initAnchorScroll(lenis) {
     const link = event.target.closest('a[href^="#"]');
     if (!link) return;
     const href = link.getAttribute("href");
-    if (!href || href === "#" || link.hasAttribute("data-story-progress")) return;
+    if (!href || href === "#") return;
     const target = document.querySelector(href);
     if (!target) return;
 
     event.preventDefault();
 
-    // Jump straight to the section — no long tween through Proyectos.
+    // Jump straight to the section â€” no long tween through Proyectos.
     if (lenis) {
       lenis.scrollTo(target, {
         offset: -20,
@@ -191,7 +163,7 @@ function initNav() {
     menuOpen = false;
     toggle.classList.remove("is-open");
     toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-label", "Abrir menú");
+    toggle.setAttribute("aria-label", "Abrir menÃº");
     if (REDUCED_MOTION) {
       menuTimeline.progress(0);
       menu.classList.remove("is-open");
@@ -209,7 +181,7 @@ function initNav() {
     menu.inert = false;
     menu.setAttribute("aria-hidden", "false");
     toggle.setAttribute("aria-expanded", "true");
-    toggle.setAttribute("aria-label", "Cerrar menú");
+    toggle.setAttribute("aria-label", "Cerrar menÃº");
     menuTimeline.play(0);
   }
 
@@ -619,35 +591,6 @@ function initStoryScroll(logo, lenis) {
     window.clearTimeout(releaseTimer);
   };
 
-  document.querySelectorAll("[data-story-progress]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      const progress = clampValue(
-        Number.parseFloat(link.dataset.storyProgress) || 0,
-        0,
-        1
-      );
-      const { start, distance } = getBounds();
-      const destination = start + distance * progress;
-
-      activeStep = closestStep(progress);
-      isStepping = true;
-      releaseTimer = window.setTimeout(releaseStep, 1300);
-
-      if (lenis) {
-        lenis.scrollTo(destination, {
-          duration: 1,
-          easing: (t) => 1 - Math.pow(1 - t, 4),
-          lock: true,
-          force: true,
-          onComplete: releaseStep,
-        });
-      } else {
-        window.scrollTo({ top: destination, behavior: "smooth" });
-      }
-    });
-  });
-
   const moveOneStep = (direction) => {
     const { start, distance } = getBounds();
     const progress = clampValue((getScrollY() - start) / distance, 0, 1);
@@ -745,7 +688,7 @@ function initStoryScroll(logo, lenis) {
       if (touchStartY === null) return;
       const currentY = event.touches[0]?.clientY;
       if (currentY === undefined) return;
-      // Logo is actively orbiting (horizontal drag) — don't fight it.
+      // Logo is actively orbiting (horizontal drag) â€” don't fight it.
       if (document.getElementById("storyCanvasWrap")?.classList.contains("is-dragging")) {
         touchStartY = currentY;
         event.preventDefault();
@@ -862,13 +805,13 @@ const PROJECTS = [
     title: "Sharon Nicole",
     client: "Sharon Nicole",
     overview:
-      "Consultora de sueño infantil. Cursos y videollamadas para mejorar el descanso de bebés y niños: rutinas, noches completas y acompañamiento respetuoso.",
+      "Consultora de sueÃ±o infantil. Cursos y videollamadas para mejorar el descanso de bebÃ©s y niÃ±os: rutinas, noches completas y acompaÃ±amiento respetuoso.",
     url: "https://sharonnicole.com",
     hero: { src: "img/sharon-cover.png", alt: "Sitio web de Sharon Nicole" },
     gallery: [
-      { src: "img/sharon-gallery-01.jpg", alt: "Sección La realidad del sitio de Sharon Nicole", size: "full" },
-      { src: "img/sharon-gallery-02.jpg", alt: "Mensaje sobre el sueño infantil en el sitio de Sharon Nicole", size: "full" },
-      { src: "img/sharon-gallery-03.jpg", alt: "Cursos y asesorías de Sharon Nicole", size: "full" },
+      { src: "img/sharon-gallery-01.jpg", alt: "SecciÃ³n La realidad del sitio de Sharon Nicole", size: "full" },
+      { src: "img/sharon-gallery-02.jpg", alt: "Mensaje sobre el sueÃ±o infantil en el sitio de Sharon Nicole", size: "full" },
+      { src: "img/sharon-gallery-03.jpg", alt: "Cursos y asesorÃ­as de Sharon Nicole", size: "full" },
     ],
   },
   {
@@ -878,7 +821,7 @@ const PROJECTS = [
     title: "Caribbean Buildings Construction",
     client: "Caribbean Buildings Construction",
     overview:
-      "Empresa dedicada al diseño y construcción de modernas y lujosas torres residenciales en la República Dominicana.",
+      "Empresa dedicada al diseÃ±o y construcciÃ³n de modernas y lujosas torres residenciales en la RepÃºblica Dominicana.",
     url: "https://caribbeanbuildingsc.com",
     hero: {
       src: "img/caribbean-cover.jpg",
@@ -887,7 +830,7 @@ const PROJECTS = [
     gallery: [
       {
         src: "img/caribbean-gallery-01.jpg",
-        alt: "Cita del sitio: Hacemos realidad grandes visiones arquitectónicas",
+        alt: "Cita del sitio: Hacemos realidad grandes visiones arquitectÃ³nicas",
         size: "full",
       },
       {
@@ -897,7 +840,7 @@ const PROJECTS = [
       },
       {
         src: "img/caribbean-gallery-03.jpg",
-        alt: "Sección Qué hacemos del sitio de Caribbean Buildings",
+        alt: "SecciÃ³n QuÃ© hacemos del sitio de Caribbean Buildings",
         size: "full",
       },
       {
@@ -914,13 +857,13 @@ const PROJECTS = [
     title: "Abejitas Veterinaria",
     client: "Abejitas Veterinaria",
     overview:
-      "Veterinaria en Santo Domingo. Consultas, vacunas, cirugía, laboratorio y hotel para mascotas.",
+      "Veterinaria en Santo Domingo. Consultas, vacunas, cirugÃ­a, laboratorio y hotel para mascotas.",
     url: "https://abejitasvet.com/",
     hero: { src: "img/abejitas-cover.jpg", alt: "Sitio web de Abejitas Veterinaria presentado en una laptop" },
     gallery: [
-      { src: "img/abejitas-gallery-01.jpg", alt: "Sección Por qué elegirnos de Abejitas Veterinaria", size: "full" },
+      { src: "img/abejitas-gallery-01.jpg", alt: "SecciÃ³n Por quÃ© elegirnos de Abejitas Veterinaria", size: "full" },
       { src: "img/abejitas-gallery-02.jpg", alt: "Servicios de Abejitas Veterinaria", size: "full" },
-      { src: "img/abejitas-gallery-03.jpg", alt: "Guía digital de Abejitas Veterinaria", size: "full" },
+      { src: "img/abejitas-gallery-03.jpg", alt: "GuÃ­a digital de Abejitas Veterinaria", size: "full" },
     ],
   },
 ];
@@ -1238,304 +1181,6 @@ function initProjectModal(lenis) {
 }
 
 /* ---------------------------------------------------------
-   Modal de solicitud (Formspree + WhatsApp + CallMeBot)
-   --------------------------------------------------------- */
-function initContactForm(lenis) {
-  const modal = document.getElementById("solicitudModal");
-  const form = document.getElementById("contactForm");
-  const formView = document.getElementById("solicitudFormView");
-  const thanksView = document.getElementById("solicitudThanks");
-  const planField = document.getElementById("planField");
-  const planBadge = document.getElementById("planBadge");
-  const planBadgeLabel = document.getElementById("planBadgeLabel");
-  const formError = document.getElementById("formError");
-  const submitBtn = document.getElementById("formSubmit");
-  const whatsappCta = document.getElementById("whatsappCta");
-  const stage = document.getElementById("smStage");
-  const backdrop = modal?.querySelector(".sm__backdrop");
-  const closeBtn = modal?.querySelector(".sm__close");
-  const scrollEl = document.getElementById("smScroll");
-
-  if (!modal || !form || !planField || !stage || !backdrop) return;
-
-  const PLANES_VALIDOS = ["Personal", "Business", "Premium"];
-  const chrome = [closeBtn, formView, thanksView].filter(Boolean);
-
-  let isOpen = false;
-  let lastFocused = null;
-
-  gsap.set(backdrop, { autoAlpha: 0 });
-  gsap.set(stage, { autoAlpha: 0 });
-  gsap.set(closeBtn, { autoAlpha: 0 });
-  modal.inert = true;
-
-  /*
-   * WHATSAPP (wa.me) — pega aquí tu número en formato internacional,
-   * sin "+" ni espacios. Ejemplo: "18095551234"
-   */
-  const WHATSAPP_NUMBER = "TU_NUMERO_WHATSAPP";
-
-  /*
-   * CALLMEBOT — notificación automática a tu WhatsApp al recibir un lead.
-   *
-   * Antes de usarlo debes activar tu cuenta:
-   * 1. Agrega el contacto de CallMeBot en WhatsApp (ver https://www.callmebot.com/blog/free-api-whatsapp-messages/)
-   * 2. Envíale el mensaje de autorización que indica su documentación
-   * 3. Te responderá con tu API key
-   *
-   * Luego pega aquí tu número (mismo formato internacional) y tu API key.
-   */
-  const CALLMEBOT_PHONE = "TU_NUMERO_CALLMEBOT";
-  const CALLMEBOT_APIKEY = "TU_APIKEY_CALLMEBOT";
-
-  function setPlan(plan) {
-    if (!PLANES_VALIDOS.includes(plan)) return;
-    planField.value = plan;
-    if (planBadge && planBadgeLabel) {
-      planBadgeLabel.textContent = plan;
-      planBadge.hidden = false;
-    }
-  }
-
-  function resetViews() {
-    form.reset();
-    planField.value = "";
-    if (planBadge) planBadge.hidden = true;
-    if (formView) formView.hidden = false;
-    if (thanksView) thanksView.hidden = true;
-    showError("");
-    form.querySelectorAll(".field__input").forEach((el) => el.classList.remove("is-invalid"));
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML =
-        'Enviar solicitud <i class="ph ph-arrow-up-right" aria-hidden="true"></i>';
-    }
-  }
-
-  function openModal(plan) {
-    if (isOpen) {
-      if (plan) setPlan(plan);
-      return;
-    }
-
-    lastFocused = document.activeElement;
-    resetViews();
-    if (plan) setPlan(plan);
-
-    isOpen = true;
-    modal.classList.add("is-open");
-    modal.inert = false;
-    modal.setAttribute("aria-hidden", "false");
-    body.classList.add("modal-open");
-    lenis?.stop();
-
-    if (scrollEl) scrollEl.scrollTop = 0;
-
-    gsap.set(stage, { autoAlpha: 0, scale: 0.97 });
-    gsap.set(closeBtn, { autoAlpha: 0 });
-    gsap.set(formView, { autoAlpha: 0, y: 18 });
-
-    gsap.to(backdrop, { autoAlpha: 1, duration: REDUCED_MOTION ? 0 : 0.5, ease: "power2.out" });
-    gsap.to(stage, {
-      autoAlpha: 1,
-      scale: 1,
-      duration: REDUCED_MOTION ? 0 : 0.55,
-      ease: "power3.out",
-    });
-    gsap.to(closeBtn, {
-      autoAlpha: 1,
-      duration: REDUCED_MOTION ? 0 : 0.4,
-      delay: REDUCED_MOTION ? 0 : 0.2,
-      ease: "power2.out",
-    });
-    gsap.to(formView, {
-      autoAlpha: 1,
-      y: 0,
-      duration: REDUCED_MOTION ? 0 : 0.55,
-      delay: REDUCED_MOTION ? 0 : 0.12,
-      ease: "power3.out",
-      onComplete: () => form.nombre?.focus({ preventScroll: true }),
-    });
-  }
-
-  function closeModal() {
-    if (!isOpen) return;
-    isOpen = false;
-
-    gsap.to(chrome, { autoAlpha: 0, duration: REDUCED_MOTION ? 0 : 0.2, ease: "power2.in" });
-    gsap.to(stage, {
-      autoAlpha: 0,
-      scale: 0.97,
-      duration: REDUCED_MOTION ? 0 : 0.35,
-      ease: "power2.in",
-    });
-    gsap.to(backdrop, {
-      autoAlpha: 0,
-      duration: REDUCED_MOTION ? 0 : 0.35,
-      ease: "power2.in",
-      onComplete: () => {
-        modal.classList.remove("is-open");
-        modal.inert = true;
-        modal.setAttribute("aria-hidden", "true");
-        body.classList.remove("modal-open");
-        lenis?.start();
-        resetViews();
-        if (lastFocused && typeof lastFocused.focus === "function") {
-          lastFocused.focus({ preventScroll: true });
-        }
-      },
-    });
-  }
-
-  // Abrir desde "Solicitar [Plan]"
-  document.querySelectorAll("[data-plan]").forEach((trigger) => {
-    trigger.addEventListener("click", (event) => {
-      event.preventDefault();
-      openModal(trigger.getAttribute("data-plan"));
-    });
-  });
-
-  modal.querySelectorAll("[data-solicitud-close]").forEach((el) => {
-    el.addEventListener("click", closeModal);
-  });
-
-  window.addEventListener("keydown", (event) => {
-    if (!isOpen) return;
-    if (event.key === "Escape") closeModal();
-  });
-
-  // Prefill + abrir si la URL trae ?plan=Personal|Business|Premium
-  const urlPlan = new URLSearchParams(window.location.search).get("plan");
-  if (urlPlan && PLANES_VALIDOS.includes(urlPlan)) {
-    openModal(urlPlan);
-  }
-
-  function showError(message) {
-    if (!formError) return;
-    formError.textContent = message;
-    formError.hidden = !message;
-  }
-
-  function validate() {
-    const nombre = form.nombre.value.trim();
-    const negocio = form.negocio.value.trim();
-    const descripcion = form.descripcion.value.trim();
-    const plan = planField.value.trim();
-
-    [form.nombre, form.negocio, form.descripcion].forEach((el) => {
-      el.classList.toggle("is-invalid", !el.value.trim());
-    });
-
-    if (!nombre || !negocio || !descripcion) {
-      showError("Completa todos los campos requeridos.");
-      return null;
-    }
-    if (!plan || !PLANES_VALIDOS.includes(plan)) {
-      showError("Selecciona un plan desde los botones Solicitar.");
-      return null;
-    }
-
-    showError("");
-    return { nombre, negocio, descripcion, plan };
-  }
-
-  function buildWhatsAppMessage({ nombre, negocio, plan, descripcion }) {
-    return `Hola, soy ${nombre} de ${negocio}. Me interesa el Plan ${plan}. ${descripcion}`;
-  }
-
-  function buildWhatsAppUrl(data) {
-    const text = encodeURIComponent(buildWhatsAppMessage(data));
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
-  }
-
-  /*
-   * Notificación CallMeBot (GET). Si falla, no bloquea el flujo principal:
-   * Formspree ya envió el lead y el usuario ve la pantalla de gracias.
-   */
-  async function notifyCallMeBot(data) {
-    try {
-      // MENSAJE CallMeBot — edita el texto si quieres otro formato de alerta.
-      const mensajeCallMeBot =
-        `Nuevo lead Stack — Plan ${data.plan}\n${data.nombre} (${data.negocio})\n${data.descripcion}`;
-
-      const text = encodeURIComponent(mensajeCallMeBot);
-      const url =
-        `https://api.callmebot.com/whatsapp.php` +
-        `?phone=${encodeURIComponent(CALLMEBOT_PHONE)}` +
-        `&text=${text}` +
-        `&apikey=${encodeURIComponent(CALLMEBOT_APIKEY)}`;
-
-      await fetch(url, { method: "GET", mode: "no-cors" });
-    } catch (err) {
-      console.warn("CallMeBot no disponible; el envío por Formspree ya se completó.", err);
-    }
-  }
-
-  function showThanks(data) {
-    if (whatsappCta) whatsappCta.href = buildWhatsAppUrl(data);
-    if (formView) formView.hidden = true;
-    if (thanksView) {
-      thanksView.hidden = false;
-      gsap.fromTo(
-        thanksView,
-        { autoAlpha: 0, y: 16 },
-        { autoAlpha: 1, y: 0, duration: REDUCED_MOTION ? 0 : 0.45, ease: "power3.out" }
-      );
-      thanksView.focus?.({ preventScroll: true });
-      if (scrollEl) scrollEl.scrollTop = 0;
-    }
-  }
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const data = validate();
-    if (!data) return;
-
-    const submitLabelOriginal = submitBtn ? submitBtn.innerHTML : "";
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = "Enviando…";
-    }
-
-    try {
-      const formData = new FormData(form);
-      formData.set("nombre", data.nombre);
-      formData.set("negocio", data.negocio);
-      formData.set("descripcion", data.descripcion);
-      formData.set("plan", data.plan);
-
-      const response = await fetch(form.action, {
-        method: "POST",
-        body: formData,
-        headers: { Accept: "application/json" },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Formspree respondió ${response.status}`);
-      }
-
-      await notifyCallMeBot(data);
-      showThanks(data);
-    } catch (err) {
-      console.error(err);
-      showError("No pudimos enviar el formulario. Intenta de nuevo en un momento.");
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = submitLabelOriginal;
-      }
-    }
-  });
-
-  form.querySelectorAll(".field__input").forEach((input) => {
-    input.addEventListener("input", () => {
-      input.classList.remove("is-invalid");
-      if (formError && !formError.hidden) showError("");
-    });
-  });
-}
-
-/* ---------------------------------------------------------
    Boot
    --------------------------------------------------------- */
 (async function boot() {
@@ -1551,7 +1196,6 @@ function initContactForm(lenis) {
   initStoryScroll(storyLogo, lenis);
   initWork();
   initProjectModal(lenis);
-  initContactForm(lenis);
 
   requestAnimationFrame(() => {
     storyLogo?.resize();
