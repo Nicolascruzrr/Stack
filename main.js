@@ -1181,6 +1181,187 @@ function initProjectModal(lenis) {
 }
 
 /* ---------------------------------------------------------
+   Lead form + toast (EmailJS)
+   --------------------------------------------------------- */
+const EMAILJS_SERVICE_ID = "service_nkam8bq";
+const EMAILJS_TEMPLATE_ID = "template_3f1444m";
+const EMAILJS_PUBLIC_KEY = "bCMZfmI8eEvdTPSlp";
+
+function initLeadForm() {
+  const form = document.getElementById("leadForm");
+  const errorEl = document.getElementById("leadError");
+  const submitBtn = document.getElementById("leadSubmit");
+  const toast = document.getElementById("leadToast");
+  const toastTitle = document.getElementById("leadToastTitle");
+  const toastBody = document.getElementById("leadToastBody");
+  const toastBar = document.getElementById("leadToastBar");
+  if (!form || !submitBtn) return;
+
+  if (window.emailjs) {
+    window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+  }
+
+  const requiredFields = [
+    form.elements.namedItem("nombre"),
+    form.elements.namedItem("apellido"),
+    form.elements.namedItem("email"),
+    form.elements.namedItem("telefono"),
+    form.elements.namedItem("necesita"),
+    form.elements.namedItem("tipo"),
+    form.elements.namedItem("presupuesto"),
+  ].filter(Boolean);
+
+  let toastTimer = null;
+
+  function showError(message) {
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.hidden = !message;
+    if (message) errorEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function openToast(mode) {
+    if (!toast) return;
+    window.clearTimeout(toastTimer);
+    toast.hidden = false;
+    toast.classList.remove("is-loading", "is-success");
+    if (toastBar) {
+      toastBar.style.transition = "none";
+      toastBar.style.width = "0%";
+      void toastBar.offsetWidth;
+      toastBar.style.transition = "";
+      toastBar.style.width = "";
+    }
+    requestAnimationFrame(() => {
+      toast.classList.add("is-open", mode);
+    });
+  }
+
+  function setToastSuccess() {
+    if (!toast) return;
+    toast.classList.remove("is-loading");
+    toast.classList.add("is-success");
+    if (toastTitle) toastTitle.textContent = "Mensaje Enviado";
+    if (toastBody) toastBody.hidden = false;
+    toastTimer = window.setTimeout(() => {
+      toast.classList.remove("is-open", "is-success");
+      window.setTimeout(() => {
+        toast.hidden = true;
+      }, 400);
+    }, 4200);
+  }
+
+  function validate() {
+    let ok = true;
+    requiredFields.forEach((el) => {
+      const empty = !String(el.value || "").trim();
+      el.classList.toggle("is-invalid", empty);
+      if (empty) ok = false;
+    });
+
+    const emailEl = form.elements.namedItem("email");
+    const email = String(emailEl?.value || "").trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailEl.classList.add("is-invalid");
+      ok = false;
+    }
+
+    if (!ok) {
+      showError("Completa todos los campos requeridos.");
+      return false;
+    }
+    showError("");
+    return true;
+  }
+
+  function getTemplateParams() {
+    const nombre = String(form.elements.namedItem("nombre")?.value || "").trim();
+    const apellido = String(form.elements.namedItem("apellido")?.value || "").trim();
+    const email = String(form.elements.namedItem("email")?.value || "").trim();
+    const telefono = String(form.elements.namedItem("telefono")?.value || "").trim();
+    const necesita = String(form.elements.namedItem("necesita")?.value || "").trim();
+    const tipo = String(form.elements.namedItem("tipo")?.value || "").trim();
+    const presupuesto = String(form.elements.namedItem("presupuesto")?.value || "").trim();
+    const ejemplo = String(form.elements.namedItem("ejemplo")?.value || "").trim();
+    const fullName = `${nombre} ${apellido}`.trim();
+
+    const message = [
+      `<strong>Teléfono:</strong> ${telefono}`,
+      `<strong>Tipo de página:</strong> ${tipo}`,
+      `<strong>Presupuesto:</strong> ${presupuesto}`,
+      ejemplo ? `<strong>Ejemplo:</strong> ${ejemplo}` : null,
+      "",
+      "<strong>Qué quiere en la página:</strong>",
+      necesita,
+    ]
+      .filter((line) => line !== null)
+      .join("<br>");
+
+    return {
+      name: fullName,
+      email,
+      time: new Date().toLocaleString("es-DO", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+      message,
+    };
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!validate()) return;
+
+    if (!window.emailjs) {
+      showError("El servicio de correo no está disponible. Recarga la página.");
+      return;
+    }
+
+    const original = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = "Enviando…";
+
+    if (toastTitle) toastTitle.textContent = "Enviando…";
+    if (toastBody) toastBody.hidden = true;
+    openToast("is-loading");
+
+    try {
+      await window.emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        getTemplateParams()
+      );
+
+      form.reset();
+      setToastSuccess();
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = original;
+    } catch (err) {
+      console.error(err);
+      if (toast) {
+        toast.classList.remove("is-open", "is-loading", "is-success");
+        toast.hidden = true;
+      }
+      showError("No pudimos enviar el formulario. Intenta de nuevo.");
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = original;
+    }
+  }
+
+  form.addEventListener("submit", handleSubmit);
+
+  form.querySelectorAll(".field__input").forEach((input) => {
+    const clear = () => {
+      input.classList.remove("is-invalid");
+      if (errorEl && !errorEl.hidden) showError("");
+    };
+    input.addEventListener("input", clear);
+    input.addEventListener("change", clear);
+  });
+}
+
+/* ---------------------------------------------------------
    Boot
    --------------------------------------------------------- */
 (async function boot() {
@@ -1196,6 +1377,7 @@ function initProjectModal(lenis) {
   initStoryScroll(storyLogo, lenis);
   initWork();
   initProjectModal(lenis);
+  initLeadForm();
 
   requestAnimationFrame(() => {
     storyLogo?.resize();
