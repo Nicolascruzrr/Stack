@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    STACK - main interaction layer
    Lenis + GSAP ScrollTrigger orchestration, story logo,
    particles, reveals, mobile nav.
