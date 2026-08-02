@@ -1233,20 +1233,21 @@ body.is-ipad .story__panel{
   max-width:min(34rem,100%);
 }
 body.is-ipad .story__panel.is-active{transform:translateY(0);}
-/* Same pinned horizontal scrub as desktop/phone — not a native carousel. */
-body.is-ipad .work{padding:0;}
-body.is-ipad .work__pin{
-  min-height:100dvh;
-  padding:clamp(5.5rem,9vh,7rem) 0 2rem;
-  overflow:hidden;
+body.is-ipad .work{padding:4rem 0 3rem;}
+body.is-ipad .work__pin{min-height:auto;padding:0;overflow:visible;}
+body.is-ipad .work__viewport{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:none;
 }
-body.is-ipad .work__viewport{overflow:hidden;}
+body.is-ipad .work__viewport::-webkit-scrollbar{display:none;}
 body.is-ipad .work__track{
-  scroll-snap-type:none;
-  will-change:transform;
+  scroll-snap-type:x mandatory;
+  will-change:auto;
 }
 body.is-ipad .work__card{
-  flex:0 0 min(58vw,50rem);
-  width:min(58vw,50rem);
-  scroll-snap-align:unset;
+  scroll-snap-align:center;
+  flex-basis:min(76vw,42rem);
+  width:min(76vw,42rem);
 }
