@@ -1128,21 +1128,6 @@ section{position:relative;z-index:var(--z-content);}
   .story{height:420vh;height:420dvh;}
   .story__pin{touch-action:none;}
   .story__canvas-wrap{touch-action:none;}
-  body.is-ipad .story{height:320vh;}
-  body.is-ipad .work{padding:4rem 0 3rem;}
-  body.is-ipad .work__pin{min-height:auto;padding:0;overflow:visible;}
-  body.is-ipad .work__viewport{
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    overscroll-behavior-inline:contain;
-    scrollbar-width:none;
-  }
-  body.is-ipad .work__viewport::-webkit-scrollbar{display:none;}
-  body.is-ipad .work__track{
-    scroll-snap-type:x mandatory;
-    will-change:auto;
-  }
-  body.is-ipad .work__card{scroll-snap-align:center;}
   .story__fallback{
     position:absolute;
     left:50%;
@@ -1217,4 +1202,52 @@ section{position:relative;z-index:var(--z-content);}
   .work__viewport::-webkit-scrollbar{display:none;}
   .work__track{scroll-snap-type:x mandatory;will-change:auto;}
   .work__card{scroll-snap-align:start;}
+}
+
+/* iPad portrait + landscape (class set in JS; width can exceed 1100 in landscape) */
+body.is-ipad .story{
+  height:320vh;
+}
+body.is-ipad .story__pin{
+  height:100vh;
+  height:100dvh;
+  min-height:100vh;
+  min-height:100dvh;
+  touch-action:none;
+}
+body.is-ipad .story__canvas-wrap{touch-action:none;}
+body.is-ipad .story__stage{
+  height:100%;
+  min-height:100%;
+}
+/* Keep the first viewport clean: logo + CTA only, no Location/Somos/Desde strip. */
+body.is-ipad .story__meta{
+  display:none !important;
+}
+body.is-ipad .story__panel{
+  top:auto;
+  bottom:clamp(1.75rem,4vh,3rem);
+  left:var(--edge)!important;
+  right:var(--edge)!important;
+  width:auto;
+  max-width:min(34rem,100%);
+}
+body.is-ipad .story__panel.is-active{transform:translateY(0);}
+body.is-ipad .work{padding:4rem 0 3rem;}
+body.is-ipad .work__pin{min-height:auto;padding:0;overflow:visible;}
+body.is-ipad .work__viewport{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:none;
+}
+body.is-ipad .work__viewport::-webkit-scrollbar{display:none;}
+body.is-ipad .work__track{
+  scroll-snap-type:x mandatory;
+  will-change:auto;
+}
+body.is-ipad .work__card{
+  scroll-snap-align:center;
+  flex-basis:min(76vw,42rem);
+  width:min(76vw,42rem);
 }
