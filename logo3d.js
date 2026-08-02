@@ -3,7 +3,8 @@
    Existing three-bar STACK mark. Soft cursor parallax +
    scroll-driven story poses via setStoryProgress().
    ============================================================ */
-import * as THREE from "three";
+/* Relative URL — works on every Safari/iPadOS without import maps. */
+import * as THREE from "./vendor/three.module.js";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -309,22 +310,24 @@ export class StackLogo3D {
     );
 
     if (ipad) {
-      // Bright, cheap lights — no env map on iPad, so keep metalness low + lights high.
-      this.key = new THREE.DirectionalLight(0xfffcf6, 3.4);
+      // Phong-friendly lights (no PBR env map on iPad).
+      this.key = new THREE.DirectionalLight(0xfffcf6, 2.8);
       this.key.position.set(3.8, 7.5, 5.2);
       this.scene.add(this.key);
 
-      this.fill = new THREE.DirectionalLight(0xc9e4f2, 2.2);
+      this.fill = new THREE.DirectionalLight(0xc9e4f2, 1.6);
       this.fill.position.set(-6.5, 2.2, 5.8);
       this.scene.add(this.fill);
 
-      this.rim = new THREE.DirectionalLight(0xffffff, 2.6);
+      this.rim = new THREE.DirectionalLight(0xffffff, 2.0);
       this.rim.position.set(1.5, 3.2, -6);
       this.scene.add(this.rim);
 
-      this.lowerFill = new THREE.PointLight(0xaebcc5, 14, 16, 2);
+      this.lowerFill = new THREE.PointLight(0xaebcc5, 10, 16, 2);
       this.lowerFill.position.set(0, -3.5, 3);
       this.scene.add(this.lowerFill);
+
+      this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
     } else {
       this.key = new THREE.SpotLight(0xfffcf6, 82, 32, Math.PI / 5.5, 0.82, 1.35);
       this.key.position.set(3.8, 7.5, 5.2);
@@ -379,14 +382,13 @@ export class StackLogo3D {
     );
 
     this.bars = HOME.map((pose, index) => {
+      // Phong on iPad: lit 3D without env maps (Standard/Physical go black).
       const material = ipad
-        ? new THREE.MeshStandardMaterial({
-            color: 0xd8dcde,
-            emissive: 0x2a2e32,
-            emissiveIntensity: 0.22,
-            metalness: 0.35,
-            roughness: 0.42,
-            envMapIntensity: 0.2,
+        ? new THREE.MeshPhongMaterial({
+            color: 0xe4e8ea,
+            emissive: 0x1a1d20,
+            specular: 0xffffff,
+            shininess: 48,
             transparent: true,
             opacity: 1,
           })
@@ -416,16 +418,12 @@ export class StackLogo3D {
       ];
       const engravingTexture = createEngravingTexture(inscriptions[index], index);
       const engravingMaterial = ipad
-        ? new THREE.MeshStandardMaterial({
-            color: 0x0b0c0d,
-            emissive: 0xffffff,
-            emissiveIntensity: 0,
+        ? new THREE.MeshBasicMaterial({
+            color: 0xffffff,
             map: engravingTexture,
             alphaMap: engravingTexture,
-            metalness: 0.7,
-            roughness: 0.55,
             transparent: true,
-            opacity: index === 2 ? 0.68 : 0.74,
+            opacity: index === 2 ? 0.55 : 0.62,
             depthWrite: false,
             polygonOffset: true,
             polygonOffsetFactor: -2,
@@ -896,13 +894,13 @@ export class StackLogo3D {
       smoothstep(0.1, 0.18, this.storyProgress) *
       (1 - smoothstep(0.88, 0.97, this.storyProgress));
     if (this.ipad) {
-      this.key.intensity = lerp(3.4, 4.2, storyLighting);
-      this.fill.intensity = lerp(2.2, 2.8, storyLighting);
-      this.rim.intensity = lerp(2.6, 3.2, storyLighting);
-      this.lowerFill.intensity = lerp(14, 18, storyLighting);
-      this.storyKey.intensity = 0.8 * storyLighting;
-      this.storyFill.intensity = 0.5 * storyLighting;
-      this.storyRim.intensity = 0.7 * storyLighting;
+      this.key.intensity = lerp(2.8, 3.5, storyLighting);
+      this.fill.intensity = lerp(1.6, 2.2, storyLighting);
+      this.rim.intensity = lerp(2.0, 2.6, storyLighting);
+      this.lowerFill.intensity = lerp(10, 14, storyLighting);
+      this.storyKey.intensity = 0.7 * storyLighting;
+      this.storyFill.intensity = 0.45 * storyLighting;
+      this.storyRim.intensity = 0.6 * storyLighting;
     } else {
       this.key.intensity = lerp(82, this.isMobile ? 120 : 220, storyLighting);
       this.fill.intensity = lerp(25, this.isMobile ? 48 : 90, storyLighting);
@@ -955,51 +953,60 @@ export class StackLogo3D {
         lerp(0.77, storyGreen, storyLighting),
         lerp(0.78, storyBlue, storyLighting)
       );
-      bar.material.emissiveIntensity = lerp(
-        0.03,
-        this.isMobile
-          ? lerp(0.018, 0.028, inactive)
-          : lerp(0.05, 0.08, inactive),
-        storyLighting
-      );
-      bar.material.metalness = lerp(
-        0.96,
-        this.isMobile ? 0.93 : 0.88,
-        storyLighting
-      );
-      bar.material.roughness = lerp(
-        0.29,
-        this.isMobile
-          ? lerp(0.32, 0.4, inactive)
-          : lerp(0.24, 0.34, inactive),
-        storyLighting
-      );
-      bar.material.envMapIntensity = lerp(
-        1.65,
-        this.isMobile
-          ? lerp(1.18, 0.96, inactive)
-          : lerp(1.7, 1.45, inactive),
-        storyLighting
-      );
-      const engravingBaseOpacity = i === 2 ? 0.68 : 0.74;
-      const engravingStoryOpacity = lerp(1, 0.72, inactive);
-      bar.engraving.material.opacity = lerp(
-        engravingBaseOpacity,
-        engravingStoryOpacity,
-        storyLighting
-      );
-      bar.engraving.material.color.setRGB(
-        lerp(0.035, 1, storyLighting),
-        lerp(0.04, 1, storyLighting),
-        lerp(0.045, 1, storyLighting)
-      );
-      bar.engraving.material.emissiveIntensity =
-        storyLighting *
-        (this.isMobile
-          ? lerp(2.2, 1.2, inactive)
-          : lerp(1.35, 0.85, inactive));
-      bar.engraving.material.metalness = lerp(0.78, 0.12, storyLighting);
-      bar.engraving.material.roughness = lerp(0.5, 0.3, storyLighting);
+      if (this.ipad) {
+        bar.material.shininess = lerp(48, 72, storyLighting);
+        bar.engraving.material.opacity = lerp(
+          i === 2 ? 0.55 : 0.62,
+          lerp(0.9, 0.65, inactive),
+          storyLighting
+        );
+      } else {
+        bar.material.emissiveIntensity = lerp(
+          0.03,
+          this.isMobile
+            ? lerp(0.018, 0.028, inactive)
+            : lerp(0.05, 0.08, inactive),
+          storyLighting
+        );
+        bar.material.metalness = lerp(
+          0.96,
+          this.isMobile ? 0.93 : 0.88,
+          storyLighting
+        );
+        bar.material.roughness = lerp(
+          0.29,
+          this.isMobile
+            ? lerp(0.32, 0.4, inactive)
+            : lerp(0.24, 0.34, inactive),
+          storyLighting
+        );
+        bar.material.envMapIntensity = lerp(
+          1.65,
+          this.isMobile
+            ? lerp(1.18, 0.96, inactive)
+            : lerp(1.7, 1.45, inactive),
+          storyLighting
+        );
+        const engravingBaseOpacity = i === 2 ? 0.68 : 0.74;
+        const engravingStoryOpacity = lerp(1, 0.72, inactive);
+        bar.engraving.material.opacity = lerp(
+          engravingBaseOpacity,
+          engravingStoryOpacity,
+          storyLighting
+        );
+        bar.engraving.material.color.setRGB(
+          lerp(0.035, 1, storyLighting),
+          lerp(0.04, 1, storyLighting),
+          lerp(0.045, 1, storyLighting)
+        );
+        bar.engraving.material.emissiveIntensity =
+          storyLighting *
+          (this.isMobile
+            ? lerp(2.2, 1.2, inactive)
+            : lerp(1.35, 0.85, inactive));
+        bar.engraving.material.metalness = lerp(0.78, 0.12, storyLighting);
+        bar.engraving.material.roughness = lerp(0.5, 0.3, storyLighting);
+      }
     });
 
     this.group.scale.setScalar(this.baseScale);
@@ -1035,25 +1042,7 @@ export class StackLogo3D {
 
 export function initStoryLogo() {
   const canvas = document.getElementById("storyCanvas");
-  const wrap = document.getElementById("storyCanvasWrap");
   if (!canvas) return null;
-
-  const showFallback = () => {
-    if (!wrap || wrap.querySelector(".story__fallback")) return;
-    const img = document.createElement("img");
-    img.className = "story__fallback";
-    img.src = "assets/images/stack-mark-white.png";
-    img.alt = "";
-    img.width = 411;
-    img.height = 429;
-    wrap.appendChild(img);
-    canvas.style.opacity = "0";
-  };
-
-  const clearFallback = () => {
-    wrap?.querySelector(".story__fallback")?.remove();
-    canvas.style.opacity = "";
-  };
 
   try {
     const probe = document.createElement("canvas");
@@ -1062,22 +1051,17 @@ export function initStoryLogo() {
       probe.getContext("webgl", { failIfMajorPerformanceCaveat: false });
     if (!gl) {
       console.warn("WebGL unavailable");
-      showFallback();
       return null;
     }
   } catch (err) {
     console.warn("WebGL probe failed:", err);
-    showFallback();
     return null;
   }
 
   try {
-    const logo = new StackLogo3D(canvas);
-    clearFallback();
-    return logo;
+    return new StackLogo3D(canvas);
   } catch (err) {
     console.error("WebGL story logo unavailable:", err);
-    showFallback();
     return null;
   }
 }

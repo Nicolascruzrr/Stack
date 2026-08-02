@@ -1440,16 +1440,6 @@ function initLeadForm() {
     });
   } catch (err) {
     console.error("Story logo failed to init:", err);
-    const wrap = document.getElementById("storyCanvasWrap");
-    const canvas = document.getElementById("storyCanvas");
-    if (wrap && !wrap.querySelector(".story__fallback")) {
-      const img = document.createElement("img");
-      img.className = "story__fallback";
-      img.src = "assets/images/stack-mark-white.png";
-      img.alt = "";
-      wrap.appendChild(img);
-      if (canvas) canvas.style.opacity = "0";
-    }
   }
 
   if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
