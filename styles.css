@@ -1224,13 +1224,13 @@ body.is-ipad .story__stage{
 body.is-ipad .story__meta{
   display:grid !important;
   bottom:clamp(2.75rem,6vh,4.25rem);
-  width:calc(100% - 0.75rem);
+  width:calc(100% - 1.15rem);
   left:0;
   right:auto;
 }
 body.is-ipad .story__meta.meta__grid{
-  width:calc(100% - 0.75rem);
-  padding-left:0.75rem;
+  width:calc(100% - 1.15rem);
+  padding-left:1.15rem;
   gap:.65rem;
 }
 body.is-ipad .story__meta .meta__item{
