@@ -87,8 +87,9 @@ function initSmoothScroll() {
     // Mobile touch must go through Lenis (story pin uses touch-action:none),
     // so exiting the logo beat feels like desktop smooth scroll into Proyectos.
     syncTouch: true,
-    syncTouchLerp: 0.085,
-    touchMultiplier: 1.15,
+    // Lighter lerp on tablets keeps Safari from feeling sticky/slow.
+    syncTouchLerp: window.innerWidth <= 1100 ? 0.12 : 0.085,
+    touchMultiplier: window.innerWidth <= 1100 ? 1.35 : 1.15,
     autoRaf: false,
     // Keep page Lenis from eating wheel/touch while a modal scrolls.
     prevent: (node) => Boolean(node.closest?.("#projectModal")),
@@ -286,9 +287,10 @@ function initParticles() {
   const speed = 0.78;
 
   const getParticleCount = () => {
-    if (REDUCED_MOTION) return 110;
-    if (window.innerWidth <= 600) return 300;
-    if (window.innerWidth <= 1024) return 500;
+    if (REDUCED_MOTION) return 70;
+    if (window.innerWidth <= 600) return 140;
+    // Tablets / large phones used to get 500 and tank Safari.
+    if (window.innerWidth <= 1100) return 160;
     return 780;
   };
 
@@ -370,7 +372,8 @@ function initParticles() {
   function initialize() {
     width = window.innerWidth;
     height = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    const liteParticles = width <= 1100 || window.matchMedia("(pointer: coarse)").matches;
+    dpr = Math.min(window.devicePixelRatio || 1, liteParticles ? 1.15 : 1.75);
 
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -397,6 +400,16 @@ function initParticles() {
   }
 
   function animate() {
+    const liteParticles =
+      window.innerWidth <= 1100 || window.matchMedia("(pointer: coarse)").matches;
+    if (liteParticles) {
+      animate._skip = !animate._skip;
+      if (animate._skip) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
+    }
+
     // Smoothly follow pointer velocity, then decay when the pointer stops.
     flowMotion.pointerX += (flowMotion.pointerTargetX - flowMotion.pointerX) * 0.14;
     flowMotion.pointerY += (flowMotion.pointerTargetY - flowMotion.pointerY) * 0.14;
