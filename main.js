@@ -9,6 +9,12 @@ const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").mat
 const body = document.body;
 const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
 
+function isIPadDevice() {
+  const ua = navigator.userAgent || "";
+  if (/iPad/.test(ua)) return true;
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
 gsap.registerPlugin(ScrollTrigger);
 
 /* ---------------------------------------------------------
@@ -58,6 +64,7 @@ function runPreloader() {
 function initSmoothScroll() {
   if (REDUCED_MOTION) return null;
 
+  const ipad = isIPadDevice();
   const lenis = new Lenis({
     duration: 1.1,
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -65,8 +72,9 @@ function initSmoothScroll() {
     // Mobile touch must go through Lenis (story pin uses touch-action:none),
     // so exiting the logo beat feels like desktop smooth scroll into Proyectos.
     syncTouch: true,
-    syncTouchLerp: 0.085,
-    touchMultiplier: 1.15,
+    // iPad has a much larger scroll surface; a heavier lerp feels sticky/slow.
+    syncTouchLerp: ipad ? 0.14 : 0.085,
+    touchMultiplier: ipad ? 1.4 : 1.15,
     autoRaf: false,
     // Keep page Lenis from eating wheel/touch while a modal scrolls.
     prevent: (node) => Boolean(node.closest?.("#projectModal")),
@@ -265,6 +273,8 @@ function initParticles() {
 
   const getParticleCount = () => {
     if (REDUCED_MOTION) return 110;
+    // iPhone (~300) stays; iPad was getting 500 on a 2–3× larger canvas.
+    if (isIPadDevice()) return 110;
     if (window.innerWidth <= 600) return 300;
     if (window.innerWidth <= 1024) return 500;
     return 780;
@@ -348,7 +358,10 @@ function initParticles() {
   function initialize() {
     width = window.innerWidth;
     height = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    dpr = Math.min(
+      window.devicePixelRatio || 1,
+      isIPadDevice() ? 1 : 1.75
+    );
 
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -375,6 +388,15 @@ function initParticles() {
   }
 
   function animate() {
+    // iPad only: half the particle frame rate. iPhone keeps full rate.
+    if (isIPadDevice()) {
+      animate._skip = !animate._skip;
+      if (animate._skip) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
+    }
+
     // Smoothly follow pointer velocity, then decay when the pointer stops.
     flowMotion.pointerX += (flowMotion.pointerTargetX - flowMotion.pointerX) * 0.14;
     flowMotion.pointerY += (flowMotion.pointerTargetY - flowMotion.pointerY) * 0.14;

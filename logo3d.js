@@ -7,6 +7,14 @@ import * as THREE from "three";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** True iPad / iPadOS — not iPhone. Large canvas is why Safari chokes here. */
+function isIPadDevice() {
+  const ua = navigator.userAgent || "";
+  if (/iPad/.test(ua)) return true;
+  // iPadOS 13+ reports as Mac with touch.
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -72,12 +80,23 @@ function drawTrackedText(ctx, text, centerX, baselineY, tracking) {
 
 function createEngravingTexture(text, index) {
   const canvas = document.createElement("canvas");
-  canvas.width = 2048;
-  canvas.height = 320;
+  const ipad = isIPadDevice();
+  canvas.width = ipad ? 1024 : 2048;
+  canvas.height = ipad ? 160 : 320;
   const ctx = canvas.getContext("2d");
   const longLine = index === 2;
-  const fontSize = longLine ? 48 : index === 1 ? 68 : 82;
-  const tracking = longLine ? 6 : 11;
+  const fontSize = ipad
+    ? longLine
+      ? 28
+      : index === 1
+        ? 40
+        : 48
+    : longLine
+      ? 48
+      : index === 1
+        ? 68
+        : 82;
+  const tracking = longLine ? (ipad ? 3 : 6) : ipad ? 6 : 11;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgba(255,255,255,0.82)";
@@ -87,7 +106,7 @@ function createEngravingTexture(text, index) {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
+  texture.anisotropy = ipad ? 1 : 8;
   texture.needsUpdate = true;
   return texture;
 }
@@ -248,20 +267,26 @@ export class StackLogo3D {
 
   _initScene() {
     const rect = this.wrap.getBoundingClientRect();
+    const ipad = isIPadDevice();
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       alpha: true,
-      antialias: true,
-      powerPreference: "high-performance",
+      // iPhone stays sharp; iPad needs cheaper fill-rate on a much larger screen.
+      antialias: !ipad,
+      powerPreference: ipad ? "default" : "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.85));
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, ipad ? 1 : 1.85)
+    );
     this.renderer.setSize(rect.width || 1, rect.height || 1, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = !ipad;
+    if (!ipad) {
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x000000, 9, 28);
@@ -270,14 +295,16 @@ export class StackLogo3D {
     this.camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
     this.camera.position.set(0, 0.35, 9.2);
 
-    this.scene.add(new THREE.HemisphereLight(0xe8eef2, 0x111315, 0.58));
+    this.scene.add(new THREE.HemisphereLight(0xe8eef2, 0x111315, ipad ? 0.75 : 0.58));
 
     this.key = new THREE.SpotLight(0xfffcf6, 82, 32, Math.PI / 5.5, 0.82, 1.35);
     this.key.position.set(3.8, 7.5, 5.2);
-    this.key.castShadow = true;
-    this.key.shadow.mapSize.set(1024, 1024);
-    this.key.shadow.bias = -0.00035;
-    this.key.shadow.normalBias = 0.025;
+    this.key.castShadow = !ipad;
+    if (!ipad) {
+      this.key.shadow.mapSize.set(1024, 1024);
+      this.key.shadow.bias = -0.00035;
+      this.key.shadow.normalBias = 0.025;
+    }
     this.key.target.position.set(0, 0, 0);
     this.scene.add(this.key, this.key.target);
 
@@ -324,9 +351,9 @@ export class StackLogo3D {
         emissiveIntensity: 0.03,
         metalness: 0.96,
         roughness: 0.29,
-        anisotropy: 0.72,
+        anisotropy: ipad ? 0 : 0.72,
         anisotropyRotation: Math.PI / 2,
-        clearcoat: 0.12,
+        clearcoat: ipad ? 0 : 0.12,
         clearcoatRoughness: 0.38,
         envMapIntensity: 1.65,
         transparent: true,
@@ -334,8 +361,8 @@ export class StackLogo3D {
       });
       const mesh = new THREE.Mesh(barGeo, material);
       mesh.position.set(pose.x, pose.y, pose.z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      mesh.castShadow = !ipad;
+      mesh.receiveShadow = !ipad;
 
       const inscriptions = [
         "STACK",
@@ -679,7 +706,10 @@ export class StackLogo3D {
     this.camera.aspect = rect.width / rect.height;
     this.camera.updateProjectionMatrix();
     this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.85)
+      Math.min(
+        window.devicePixelRatio || 1,
+        isIPadDevice() ? 1 : mobile ? 1.5 : 1.85
+      )
     );
     this.renderer.setSize(rect.width, rect.height, false);
     this.bars?.forEach(({ mesh, engraving, rearEngraving }) => {
