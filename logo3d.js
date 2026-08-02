@@ -3,7 +3,7 @@
    Existing three-bar STACK mark. Soft cursor parallax +
    scroll-driven story poses via setStoryProgress().
    ============================================================ */
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+import * as THREE from "three";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1051,6 +1051,11 @@ export function initStoryLogo() {
     canvas.style.opacity = "0";
   };
 
+  const clearFallback = () => {
+    wrap?.querySelector(".story__fallback")?.remove();
+    canvas.style.opacity = "";
+  };
+
   try {
     const probe = document.createElement("canvas");
     const gl =
@@ -1068,7 +1073,9 @@ export function initStoryLogo() {
   }
 
   try {
-    return new StackLogo3D(canvas);
+    const logo = new StackLogo3D(canvas);
+    clearFallback();
+    return logo;
   } catch (err) {
     console.error("WebGL story logo unavailable:", err);
     showFallback();
