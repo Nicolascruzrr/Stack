@@ -1220,19 +1220,62 @@ body.is-ipad .story__stage{
   height:100%;
   min-height:100%;
 }
-/* Keep the first viewport clean: logo + CTA only, no Location/Somos/Desde strip. */
+/* Meta strip raised under the nav so Location / Somos / Desde stay in frame. */
 body.is-ipad .story__meta{
-  display:none !important;
+  display:grid !important;
+  top:calc(var(--nav-h) + 0.35rem);
+  bottom:auto;
+  left:0;
+  right:0;
+  width:100%;
+  padding:0 var(--edge);
+  opacity:1;
+  transform:none;
 }
+body.is-ipad .story__meta.meta__grid{
+  width:100%;
+  max-width:1600px;
+  margin:0 auto;
+  padding-left:var(--edge);
+  gap:clamp(.75rem,2vw,1.5rem);
+}
+body.is-ipad .story__meta.is-hidden{
+  opacity:0;
+  transform:translateY(-8px);
+}
+/* Panels + CTA raised so title and buttons aren't clipped. */
 body.is-ipad .story__panel{
   top:auto;
-  bottom:clamp(1.75rem,4vh,3rem);
+  bottom:calc(4.75rem + env(safe-area-inset-bottom, 0px));
   left:var(--edge)!important;
   right:var(--edge)!important;
   width:auto;
   max-width:min(34rem,100%);
+  gap:.75rem;
 }
 body.is-ipad .story__panel.is-active{transform:translateY(0);}
+body.is-ipad .story__title{
+  font-size:clamp(2rem,5.5vw,3.2rem);
+  max-width:14ch;
+}
+body.is-ipad .story__body,
+body.is-ipad .story__list{
+  max-width:36ch;
+}
+body.is-ipad .story__cta{
+  margin-top:.15rem;
+}
+/* Landscape: roomier bottom stack, still keep CTA visible. */
+body.is-ipad.is-ipad-landscape .story__meta{
+  top:calc(var(--nav-h) + 0.15rem);
+}
+body.is-ipad.is-ipad-landscape .story__panel{
+  bottom:calc(2.75rem + env(safe-area-inset-bottom, 0px));
+  max-width:min(28rem,46vw);
+}
+body.is-ipad.is-ipad-landscape .story__title{
+  font-size:clamp(1.85rem,4vw,2.6rem);
+}
 body.is-ipad .work{padding:4rem 0 3rem;}
 body.is-ipad .work__pin{min-height:auto;padding:0;overflow:visible;}
 body.is-ipad .work__viewport{

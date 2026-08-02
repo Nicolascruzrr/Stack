@@ -16,6 +16,15 @@ function isIPadDevice() {
   return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
 }
 
+function syncIPadOrientationClass() {
+  if (!isIPadDevice()) {
+    body.classList.remove("is-ipad", "is-ipad-landscape");
+    return;
+  }
+  body.classList.add("is-ipad");
+  body.classList.toggle("is-ipad-landscape", window.innerWidth > window.innerHeight);
+}
+
 if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
@@ -1419,7 +1428,11 @@ function initLeadForm() {
    Boot
    --------------------------------------------------------- */
 (async function boot() {
-  if (isIPadDevice()) body.classList.add("is-ipad");
+  syncIPadOrientationClass();
+  window.addEventListener("resize", syncIPadOrientationClass, { passive: true });
+  window.addEventListener("orientationchange", () => {
+    window.setTimeout(syncIPadOrientationClass, 120);
+  });
 
   await runPreloader();
 
