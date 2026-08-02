@@ -751,14 +751,21 @@ export class StackLogo3D {
     const ipad = isIPadDevice();
     const mobile = width <= 1100 || ipad;
     const compactMobile = width <= 600;
+    const ipadLandscape = ipad && width > height;
     // iPad / tablet portrait only — phones and landscape stay unchanged.
-    const tabletPortrait = ipad ? height > width : mobile && !compactMobile && height > width;
+    const tabletPortrait = ipad
+      ? height > width
+      : mobile && !compactMobile && height > width;
 
     this.isMobile = mobile;
     this.isTabletPortrait = tabletPortrait;
     this.ipad = ipad;
 
-    if (tabletPortrait) {
+    if (ipadLandscape) {
+      this.barScale = 1.06;
+      this.baseScale = 1.1;
+      this.camera.fov = 36;
+    } else if (tabletPortrait) {
       this.barScale = 0.95;
       this.baseScale = 1.08;
       this.camera.fov = 40;
