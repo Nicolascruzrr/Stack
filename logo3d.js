@@ -112,10 +112,10 @@ function createEngravingTexture(text, index) {
   return texture;
 }
 
-function createStudioEnvironment(renderer) {
+function createStudioEnvironment(renderer, { lite = false } = {}) {
   const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 512;
+  canvas.width = lite ? 512 : 1024;
+  canvas.height = lite ? 256 : 512;
   const ctx = canvas.getContext("2d");
 
   const background = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -135,13 +135,15 @@ function createStudioEnvironment(renderer) {
   softbox.addColorStop(0.58, "rgba(255,255,255,0.1)");
   softbox.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = softbox;
-  ctx.fillRect(0, 34, canvas.width, 74);
-  ctx.fillRect(0, 404, canvas.width, 24);
+  const bandY = lite ? 17 : 34;
+  const bandH = lite ? 37 : 74;
+  ctx.fillRect(0, bandY, canvas.width, bandH);
+  ctx.fillRect(0, lite ? 202 : 404, canvas.width, lite ? 12 : 24);
 
   ctx.fillStyle = "rgba(210,225,236,0.7)";
-  ctx.fillRect(86, 135, 18, 235);
+  ctx.fillRect(lite ? 43 : 86, lite ? 68 : 135, lite ? 9 : 18, lite ? 118 : 235);
   ctx.fillStyle = "rgba(255,246,232,0.5)";
-  ctx.fillRect(850, 158, 11, 185);
+  ctx.fillRect(lite ? 425 : 850, lite ? 79 : 158, lite ? 6 : 11, lite ? 92 : 185);
 
   const source = new THREE.CanvasTexture(canvas);
   source.mapping = THREE.EquirectangularReflectionMapping;
@@ -299,35 +301,33 @@ export class StackLogo3D {
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x000000, 9, 28);
-    // PMREM studio env is expensive on iPad Metal — skip it.
-    this.environment = ipad ? null : createStudioEnvironment(this.renderer);
-    if (this.environment) this.scene.environment = this.environment;
+    // Lite PMREM on iPad keeps metal looking like desktop without full studio cost.
+    this.environment = createStudioEnvironment(this.renderer, { lite: ipad });
+    this.scene.environment = this.environment;
     this.camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
     this.camera.position.set(0, 0.35, 9.2);
 
     this.scene.add(
-      new THREE.HemisphereLight(0xe8eef2, 0x111315, ipad ? 1.6 : 0.58)
+      new THREE.HemisphereLight(0xe8eef2, 0x111315, ipad ? 0.72 : 0.58)
     );
 
     if (ipad) {
-      // Phong-friendly lights (no PBR env map on iPad).
-      this.key = new THREE.DirectionalLight(0xfffcf6, 2.8);
+      // Directional lights + env map ≈ desktop metal without SpotLight shadows.
+      this.key = new THREE.DirectionalLight(0xfffcf6, 2.4);
       this.key.position.set(3.8, 7.5, 5.2);
       this.scene.add(this.key);
 
-      this.fill = new THREE.DirectionalLight(0xc9e4f2, 1.6);
+      this.fill = new THREE.DirectionalLight(0xc9e4f2, 1.05);
       this.fill.position.set(-6.5, 2.2, 5.8);
       this.scene.add(this.fill);
 
-      this.rim = new THREE.DirectionalLight(0xffffff, 2.0);
+      this.rim = new THREE.DirectionalLight(0xffffff, 1.55);
       this.rim.position.set(1.5, 3.2, -6);
       this.scene.add(this.rim);
 
-      this.lowerFill = new THREE.PointLight(0xaebcc5, 10, 16, 2);
+      this.lowerFill = new THREE.PointLight(0xaebcc5, 6, 14, 2);
       this.lowerFill.position.set(0, -3.5, 3);
       this.scene.add(this.lowerFill);
-
-      this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
     } else {
       this.key = new THREE.SpotLight(0xfffcf6, 82, 32, Math.PI / 5.5, 0.82, 1.35);
       this.key.position.set(3.8, 7.5, 5.2);
@@ -382,13 +382,15 @@ export class StackLogo3D {
     );
 
     this.bars = HOME.map((pose, index) => {
-      // Phong on iPad: lit 3D without env maps (Standard/Physical go black).
+      // Standard + lite env on iPad ≈ desktop metal without Physical extras.
       const material = ipad
-        ? new THREE.MeshPhongMaterial({
-            color: 0xe4e8ea,
-            emissive: 0x1a1d20,
-            specular: 0xffffff,
-            shininess: 48,
+        ? new THREE.MeshStandardMaterial({
+            color: 0xbfc4c7,
+            emissive: 0x111315,
+            emissiveIntensity: 0.03,
+            metalness: 0.94,
+            roughness: 0.3,
+            envMapIntensity: 1.55,
             transparent: true,
             opacity: 1,
           })
@@ -418,15 +420,20 @@ export class StackLogo3D {
       ];
       const engravingTexture = createEngravingTexture(inscriptions[index], index);
       const engravingMaterial = ipad
-        ? new THREE.MeshBasicMaterial({
-            color: 0xffffff,
+        ? new THREE.MeshStandardMaterial({
+            color: 0x0b0c0d,
+            emissive: 0xffffff,
+            emissiveIntensity: 0,
             map: engravingTexture,
             alphaMap: engravingTexture,
+            metalness: 0.78,
+            roughness: 0.5,
             transparent: true,
-            opacity: index === 2 ? 0.55 : 0.62,
+            opacity: index === 2 ? 0.68 : 0.74,
             depthWrite: false,
             polygonOffset: true,
             polygonOffsetFactor: -2,
+            envMapIntensity: 0.45,
             toneMapped: false,
           })
         : new THREE.MeshPhysicalMaterial({
@@ -894,13 +901,13 @@ export class StackLogo3D {
       smoothstep(0.1, 0.18, this.storyProgress) *
       (1 - smoothstep(0.88, 0.97, this.storyProgress));
     if (this.ipad) {
-      this.key.intensity = lerp(2.8, 3.5, storyLighting);
-      this.fill.intensity = lerp(1.6, 2.2, storyLighting);
-      this.rim.intensity = lerp(2.0, 2.6, storyLighting);
-      this.lowerFill.intensity = lerp(10, 14, storyLighting);
-      this.storyKey.intensity = 0.7 * storyLighting;
-      this.storyFill.intensity = 0.45 * storyLighting;
-      this.storyRim.intensity = 0.6 * storyLighting;
+      this.key.intensity = lerp(2.4, 3.2, storyLighting);
+      this.fill.intensity = lerp(1.05, 1.6, storyLighting);
+      this.rim.intensity = lerp(1.55, 2.2, storyLighting);
+      this.lowerFill.intensity = lerp(6, 11, storyLighting);
+      this.storyKey.intensity = 0.55 * storyLighting;
+      this.storyFill.intensity = 0.32 * storyLighting;
+      this.storyRim.intensity = 0.48 * storyLighting;
     } else {
       this.key.intensity = lerp(82, this.isMobile ? 120 : 220, storyLighting);
       this.fill.intensity = lerp(25, this.isMobile ? 48 : 90, storyLighting);
@@ -953,60 +960,51 @@ export class StackLogo3D {
         lerp(0.77, storyGreen, storyLighting),
         lerp(0.78, storyBlue, storyLighting)
       );
-      if (this.ipad) {
-        bar.material.shininess = lerp(48, 72, storyLighting);
-        bar.engraving.material.opacity = lerp(
-          i === 2 ? 0.55 : 0.62,
-          lerp(0.9, 0.65, inactive),
-          storyLighting
-        );
-      } else {
-        bar.material.emissiveIntensity = lerp(
-          0.03,
-          this.isMobile
-            ? lerp(0.018, 0.028, inactive)
-            : lerp(0.05, 0.08, inactive),
-          storyLighting
-        );
-        bar.material.metalness = lerp(
-          0.96,
-          this.isMobile ? 0.93 : 0.88,
-          storyLighting
-        );
-        bar.material.roughness = lerp(
-          0.29,
-          this.isMobile
-            ? lerp(0.32, 0.4, inactive)
-            : lerp(0.24, 0.34, inactive),
-          storyLighting
-        );
-        bar.material.envMapIntensity = lerp(
-          1.65,
-          this.isMobile
-            ? lerp(1.18, 0.96, inactive)
-            : lerp(1.7, 1.45, inactive),
-          storyLighting
-        );
-        const engravingBaseOpacity = i === 2 ? 0.68 : 0.74;
-        const engravingStoryOpacity = lerp(1, 0.72, inactive);
-        bar.engraving.material.opacity = lerp(
-          engravingBaseOpacity,
-          engravingStoryOpacity,
-          storyLighting
-        );
-        bar.engraving.material.color.setRGB(
-          lerp(0.035, 1, storyLighting),
-          lerp(0.04, 1, storyLighting),
-          lerp(0.045, 1, storyLighting)
-        );
-        bar.engraving.material.emissiveIntensity =
-          storyLighting *
-          (this.isMobile
-            ? lerp(2.2, 1.2, inactive)
-            : lerp(1.35, 0.85, inactive));
-        bar.engraving.material.metalness = lerp(0.78, 0.12, storyLighting);
-        bar.engraving.material.roughness = lerp(0.5, 0.3, storyLighting);
-      }
+      bar.material.emissiveIntensity = lerp(
+        0.03,
+        this.isMobile
+          ? lerp(0.018, 0.028, inactive)
+          : lerp(0.05, 0.08, inactive),
+        storyLighting
+      );
+      bar.material.metalness = lerp(
+        this.ipad ? 0.94 : 0.96,
+        this.isMobile ? 0.93 : 0.88,
+        storyLighting
+      );
+      bar.material.roughness = lerp(
+        this.ipad ? 0.3 : 0.29,
+        this.isMobile
+          ? lerp(0.32, 0.4, inactive)
+          : lerp(0.24, 0.34, inactive),
+        storyLighting
+      );
+      bar.material.envMapIntensity = lerp(
+        this.ipad ? 1.55 : 1.65,
+        this.isMobile
+          ? lerp(1.18, 0.96, inactive)
+          : lerp(1.7, 1.45, inactive),
+        storyLighting
+      );
+      const engravingBaseOpacity = i === 2 ? 0.68 : 0.74;
+      const engravingStoryOpacity = lerp(1, 0.72, inactive);
+      bar.engraving.material.opacity = lerp(
+        engravingBaseOpacity,
+        engravingStoryOpacity,
+        storyLighting
+      );
+      bar.engraving.material.color.setRGB(
+        lerp(0.035, 1, storyLighting),
+        lerp(0.04, 1, storyLighting),
+        lerp(0.045, 1, storyLighting)
+      );
+      bar.engraving.material.emissiveIntensity =
+        storyLighting *
+        (this.isMobile
+          ? lerp(2.2, 1.2, inactive)
+          : lerp(1.35, 0.85, inactive));
+      bar.engraving.material.metalness = lerp(0.78, 0.12, storyLighting);
+      bar.engraving.material.roughness = lerp(0.5, 0.3, storyLighting);
     });
 
     this.group.scale.setScalar(this.baseScale);
