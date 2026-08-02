@@ -305,24 +305,24 @@ export class StackLogo3D {
     this.camera.position.set(0, 0.35, 9.2);
 
     this.scene.add(
-      new THREE.HemisphereLight(0xe8eef2, 0x111315, ipad ? 1.05 : 0.58)
+      new THREE.HemisphereLight(0xe8eef2, 0x111315, ipad ? 1.6 : 0.58)
     );
 
     if (ipad) {
-      // Cheap lights that still read metallic without SpotLight + shadows.
-      this.key = new THREE.DirectionalLight(0xfffcf6, 2.6);
+      // Bright, cheap lights — no env map on iPad, so keep metalness low + lights high.
+      this.key = new THREE.DirectionalLight(0xfffcf6, 3.4);
       this.key.position.set(3.8, 7.5, 5.2);
       this.scene.add(this.key);
 
-      this.fill = new THREE.DirectionalLight(0xc9e4f2, 1.1);
+      this.fill = new THREE.DirectionalLight(0xc9e4f2, 2.2);
       this.fill.position.set(-6.5, 2.2, 5.8);
       this.scene.add(this.fill);
 
-      this.rim = new THREE.DirectionalLight(0xffffff, 1.4);
+      this.rim = new THREE.DirectionalLight(0xffffff, 2.6);
       this.rim.position.set(1.5, 3.2, -6);
       this.scene.add(this.rim);
 
-      this.lowerFill = new THREE.PointLight(0xaebcc5, 8, 14, 2);
+      this.lowerFill = new THREE.PointLight(0xaebcc5, 14, 16, 2);
       this.lowerFill.position.set(0, -3.5, 3);
       this.scene.add(this.lowerFill);
     } else {
@@ -381,12 +381,12 @@ export class StackLogo3D {
     this.bars = HOME.map((pose, index) => {
       const material = ipad
         ? new THREE.MeshStandardMaterial({
-            color: 0xc2c7ca,
-            emissive: 0x15181a,
-            emissiveIntensity: 0.06,
-            metalness: 0.9,
-            roughness: 0.34,
-            envMapIntensity: 1,
+            color: 0xd8dcde,
+            emissive: 0x2a2e32,
+            emissiveIntensity: 0.22,
+            metalness: 0.35,
+            roughness: 0.42,
+            envMapIntensity: 0.2,
             transparent: true,
             opacity: 1,
           })
@@ -607,11 +607,16 @@ export class StackLogo3D {
       (entries) => {
         entries.forEach((entry) => {
           this.visible = entry.isIntersecting;
-          if (this.visible) this.start();
-          else this.stop();
+          if (this.visible) {
+            this.resize();
+            this.start();
+          } else if (entry.intersectionRatio === 0 && entry.boundingClientRect.bottom < 0) {
+            // Only pause once the hero has scrolled fully away.
+            this.stop();
+          }
         });
       },
-      { threshold: 0.02 }
+      { threshold: [0, 0.02, 0.1], rootMargin: "10% 0px" }
     );
     this._io.observe(this.wrap);
   }
@@ -738,13 +743,15 @@ export class StackLogo3D {
 
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const mobile = width <= 1100;
+    const ipad = isIPadDevice();
+    const mobile = width <= 1100 || ipad;
     const compactMobile = width <= 600;
     // iPad / tablet portrait only — phones and landscape stay unchanged.
-    const tabletPortrait = mobile && !compactMobile && height > width;
+    const tabletPortrait = ipad ? height > width : mobile && !compactMobile && height > width;
 
     this.isMobile = mobile;
     this.isTabletPortrait = tabletPortrait;
+    this.ipad = ipad;
 
     if (tabletPortrait) {
       this.barScale = 0.95;
@@ -890,13 +897,13 @@ export class StackLogo3D {
       smoothstep(0.1, 0.18, this.storyProgress) *
       (1 - smoothstep(0.88, 0.97, this.storyProgress));
     if (this.ipad) {
-      this.key.intensity = lerp(2.6, 3.5, storyLighting);
-      this.fill.intensity = lerp(1.1, 1.7, storyLighting);
-      this.rim.intensity = lerp(1.4, 2.1, storyLighting);
-      this.lowerFill.intensity = lerp(8, 14, storyLighting);
-      this.storyKey.intensity = 0.45 * storyLighting;
-      this.storyFill.intensity = 0.28 * storyLighting;
-      this.storyRim.intensity = 0.4 * storyLighting;
+      this.key.intensity = lerp(3.4, 4.2, storyLighting);
+      this.fill.intensity = lerp(2.2, 2.8, storyLighting);
+      this.rim.intensity = lerp(2.6, 3.2, storyLighting);
+      this.lowerFill.intensity = lerp(14, 18, storyLighting);
+      this.storyKey.intensity = 0.8 * storyLighting;
+      this.storyFill.intensity = 0.5 * storyLighting;
+      this.storyRim.intensity = 0.7 * storyLighting;
     } else {
       this.key.intensity = lerp(82, this.isMobile ? 120 : 220, storyLighting);
       this.fill.intensity = lerp(25, this.isMobile ? 48 : 90, storyLighting);

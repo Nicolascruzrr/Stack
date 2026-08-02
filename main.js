@@ -1432,6 +1432,12 @@ function initLeadForm() {
   try {
     const { initStoryLogo } = await import("./logo3d.js");
     storyLogo = initStoryLogo();
+    // Layout may still be settling after the preloader — force a sharp first frame.
+    requestAnimationFrame(() => {
+      storyLogo?.resize();
+      storyLogo?.start();
+      requestAnimationFrame(() => storyLogo?.resize());
+    });
   } catch (err) {
     console.error("Story logo failed to init:", err);
     const wrap = document.getElementById("storyCanvasWrap");
