@@ -3,7 +3,8 @@
    Lenis + GSAP ScrollTrigger orchestration, story logo,
    particles, reveals, mobile nav.
    ============================================================ */
-import { initStoryLogo } from "./logo3d.js";
+/* logo3d / Three.js are loaded AFTER the preloader via dynamic import.
+   A static import blocks this whole module on iPad when Three hangs. */
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const body = document.body;
@@ -15,18 +16,41 @@ function isIPadDevice() {
   return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
 }
 
-gsap.registerPlugin(ScrollTrigger);
+if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 /* ---------------------------------------------------------
    Preloader
    --------------------------------------------------------- */
+function dismissPreloader(preloader) {
+  if (!preloader || preloader.getAttribute("data-done") === "1") return;
+  preloader.setAttribute("data-done", "1");
+  preloader.classList.add("is-hidden");
+  window.setTimeout(() => preloader.remove(), REDUCED_MOTION ? 150 : 700);
+}
+
 function runPreloader() {
   return new Promise((resolve) => {
     const preloader = document.getElementById("preloader");
     const timeout = (ms) => new Promise((res) => setTimeout(res, ms));
+    let settled = false;
 
-    // Only gate on critical above-the-fold assets; lazy-loaded imagery
-    // further down the page should not hold up first paint.
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      dismissPreloader(preloader);
+      resolve();
+    };
+
+    // Never leave iPad on the mark forever if fonts/images stall.
+    timeout(4500).then(done);
+
+    if (!preloader) {
+      done();
+      return;
+    }
+
     const imgs = Array.from(document.images).filter((img) => img.loading !== "lazy");
     const imgPromises = imgs.map((img) =>
       img.complete
@@ -36,24 +60,21 @@ function runPreloader() {
             img.addEventListener("error", res, { once: true });
           })
     );
-    const fontsReady = document.fonts ? document.fonts.ready.catch(() => {}) : Promise.resolve();
-    const assetsReady = Promise.race([Promise.all([...imgPromises, fontsReady]), timeout(4000)]);
-
-    function finish() {
-      preloader.classList.add("is-hidden");
-      setTimeout(() => {
-        preloader.remove();
-        resolve();
-      }, REDUCED_MOTION ? 150 : 700);
-    }
+    const fontsReady = document.fonts
+      ? Promise.race([document.fonts.ready.catch(() => {}), timeout(1500)])
+      : Promise.resolve();
+    const assetsReady = Promise.race([
+      Promise.all([...imgPromises, fontsReady]),
+      timeout(2500),
+    ]);
 
     if (REDUCED_MOTION) {
-      assetsReady.then(finish);
+      assetsReady.then(done);
       return;
     }
 
-    Promise.all([assetsReady, timeout(1200)]).then(() => {
-      setTimeout(finish, 260);
+    Promise.all([assetsReady, timeout(800)]).then(() => {
+      window.setTimeout(done, 180);
     });
   });
 }
@@ -1408,22 +1429,33 @@ function initLeadForm() {
 
   await runPreloader();
 
-  const lenis = initSmoothScroll();
+  const lenis =
+    typeof Lenis !== "undefined" && typeof gsap !== "undefined"
+      ? initSmoothScroll()
+      : null;
 
   let storyLogo = null;
   try {
+    // Load Three.js only after the page is visible.
+    const { initStoryLogo } = await import("./logo3d.js");
     storyLogo = initStoryLogo();
   } catch (err) {
     console.error("Story logo failed to init:", err);
   }
 
-  initNav();
-  initAnchorScroll(lenis);
-  initParticles();
-  initReveals();
-  initStoryScroll(storyLogo, lenis);
-  initWork();
-  initProjectModal(lenis);
+  if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
+    initNav();
+    initAnchorScroll(lenis);
+    initParticles();
+    initReveals();
+    initStoryScroll(storyLogo, lenis);
+    initWork();
+    initProjectModal(lenis);
+  } else {
+    console.error("GSAP unavailable");
+    body.classList.add("js-ready");
+  }
+
   initLeadForm();
 
   const refreshLayout = () => {
@@ -1432,7 +1464,7 @@ function initLeadForm() {
     } catch (_) {
       /* ignore */
     }
-    ScrollTrigger.refresh();
+    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
   };
 
   requestAnimationFrame(refreshLayout);
@@ -1441,7 +1473,6 @@ function initLeadForm() {
     window.setTimeout(refreshLayout, 250);
   });
 
-  // iPhone (esp. Pro Max) changes visualViewport as the Safari chrome shows/hides.
   const vv = window.visualViewport;
   if (vv) {
     let vvTimer = 0;
