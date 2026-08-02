@@ -278,9 +278,11 @@ export class StackLogo3D {
       powerPreference: ipad ? "default" : "high-performance",
       failIfMajorPerformanceCaveat: false,
     });
-    // iPad: render at lower internal res, stretch with CSS — biggest smoothness win.
-    const bufferScale = ipad ? 0.62 : 1;
-    this.renderer.setPixelRatio(ipad ? 1 : Math.min(window.devicePixelRatio || 1, 1.85));
+    // Full CSS size + capped DPR: sharp enough without desktop fill-rate.
+    const bufferScale = 1;
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, ipad ? 1.5 : 1.85)
+    );
     this.renderer.setSize(
       Math.max(1, (rect.width || 1) * bufferScale),
       Math.max(1, (rect.height || 1) * bufferScale),
@@ -765,13 +767,12 @@ export class StackLogo3D {
     this.camera.aspect = rect.width / rect.height;
     this.camera.updateProjectionMatrix();
     const ipad = isIPadDevice();
-    const bufferScale = ipad ? 0.62 : 1;
     this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, ipad ? 1 : mobile ? 1.5 : 1.85)
+      Math.min(window.devicePixelRatio || 1, ipad ? 1.5 : mobile ? 1.5 : 1.85)
     );
     this.renderer.setSize(
-      Math.max(1, rect.width * bufferScale),
-      Math.max(1, rect.height * bufferScale),
+      Math.max(1, rect.width),
+      Math.max(1, rect.height),
       false
     );
     this.bars?.forEach(({ mesh, engraving, rearEngraving }) => {
