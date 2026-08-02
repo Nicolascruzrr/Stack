@@ -632,9 +632,9 @@ export class StackLogo3D {
 
   _mobilePoseAt(progress) {
     const p = clamp(progress, 0, 1);
-    // iPad landscape: open the stack a bit so the three bars read clearly.
+    // iPad landscape: match desktop stack spacing (not the tighter phone squeeze).
     const homeSpread =
-      this.ipad && !this.isTabletPortrait ? 1.18 : this.ipad ? 0.92 : 0.78;
+      this.ipad && !this.isTabletPortrait ? 1 : this.ipad ? 0.92 : 0.78;
     const home = HOME.map((pose) => ({ ...pose, y: pose.y * homeSpread }));
     const focusTop = [
       { x: 0, y: 0.28, z: 0, rx: 0.02, ry: 0, rz: 0, opacity: 1 },
