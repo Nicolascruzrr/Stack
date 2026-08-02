@@ -234,6 +234,10 @@ export class StackLogo3D {
     this.running = false;
     this.time = 0;
     this.autoRotation = 0;
+    this.isMobile = false;
+    this.isTabletPortrait = false;
+    this.barScale = 1;
+    this.baseScale = 1;
 
     this._initScene();
     this._bindEvents();
@@ -592,6 +596,9 @@ export class StackLogo3D {
   }
 
   _cameraAt(progress) {
+    if (this.isTabletPortrait) {
+      return { ...CAMERA_HOME, y: 0.4, z: 8.6, ty: 0.18 };
+    }
     if (this.isMobile) {
       return { ...CAMERA_HOME, y: 0.42, ty: 0.2 };
     }
@@ -641,12 +648,35 @@ export class StackLogo3D {
     const rect = this.wrap.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
-    const mobile = window.innerWidth <= 860;
-    const compactMobile = window.innerWidth <= 600;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const mobile = width <= 1100;
+    const compactMobile = width <= 600;
+    // iPad / tablet portrait only — phones and landscape stay unchanged.
+    const tabletPortrait = mobile && !compactMobile && height > width;
+
     this.isMobile = mobile;
-    this.barScale = compactMobile ? 0.82 : mobile ? 0.88 : 1;
+    this.isTabletPortrait = tabletPortrait;
+
+    if (tabletPortrait) {
+      this.barScale = 0.95;
+      this.baseScale = 1.08;
+      this.camera.fov = 40;
+    } else if (compactMobile) {
+      this.barScale = 0.82;
+      this.baseScale = 1;
+      this.camera.fov = 42;
+    } else if (mobile) {
+      this.barScale = 0.88;
+      this.baseScale = 1;
+      this.camera.fov = 42;
+    } else {
+      this.barScale = 1;
+      this.baseScale = 1;
+      this.camera.fov = 34;
+    }
+
     this.camera.aspect = rect.width / rect.height;
-    this.camera.fov = mobile ? 42 : 34;
     this.camera.updateProjectionMatrix();
     this.renderer.setPixelRatio(
       Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.85)
@@ -659,7 +689,6 @@ export class StackLogo3D {
       engraving.scale.set(engravingScaleX, engravingScaleY, 1);
       rearEngraving.scale.set(engravingScaleX, engravingScaleY, 1);
     });
-    this.baseScale = 1;
   }
 
   start() {
@@ -897,5 +926,11 @@ export class StackLogo3D {
 
 export function initStoryLogo() {
   const canvas = document.getElementById("storyCanvas");
-  return canvas ? new StackLogo3D(canvas) : null;
+  if (!canvas) return null;
+  try {
+    return new StackLogo3D(canvas);
+  } catch (err) {
+    console.error("WebGL story logo unavailable:", err);
+    return null;
+  }
 }

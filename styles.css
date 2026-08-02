@@ -401,12 +401,18 @@ section{position:relative;z-index:var(--z-content);}
    ============================================================ */
 .story{
   position:relative;
+  /* vh fallback first: some iOS Safari builds mishandle dvh-only heights
+     on large phones and collapse the story scroll distance. */
+  height:360vh;
   height:360dvh;
 }
 .story__pin{
   position:sticky;
   top:0;
+  height:100vh;
   height:100dvh;
+  min-height:100vh;
+  min-height:100dvh;
   overflow:hidden;
 }
 .story__stage{
@@ -866,7 +872,7 @@ section{position:relative;z-index:var(--z-content);}
 }
 .pm__gallery-item:hover img{transform:scale(1.035);}
 
-@media (max-width:860px){
+@media (max-width:1100px){
   .pm__stage{inset:0;border-radius:0;}
   .pm__hero-frame{height:58vh;}
   .pm__hero-caption{padding:2.5rem 1.25rem 1.75rem;}
@@ -1116,10 +1122,10 @@ section{position:relative;z-index:var(--z-content);}
 /* ============================================================
    Responsive
    ============================================================ */
-@media (max-width:860px){
+@media (max-width:1100px){
   .nav__toggle{margin-left:auto;}
   .nav__inner{gap:1rem;}
-  .story{height:420dvh;}
+  .story{height:420vh;height:420dvh;}
   .story__pin{touch-action:none;}
   .story__canvas-wrap{touch-action:none;}
   .story__panel{
@@ -1174,7 +1180,7 @@ section{position:relative;z-index:var(--z-content);}
   .footer__bottom{flex-direction:column;align-items:flex-start;}
 }
 
-@media (max-width:860px) and (prefers-reduced-motion:reduce){
+@media (max-width:1100px) and (prefers-reduced-motion:reduce){
   .work{padding:6rem 0 3rem;}
   .work__pin{min-height:auto;padding:0;overflow:visible;}
   .work__viewport{

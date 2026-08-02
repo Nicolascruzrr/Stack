@@ -535,6 +535,7 @@ function initReveals() {
    --------------------------------------------------------- */
 function initStoryScroll(logo, lenis) {
   const section = document.getElementById("story");
+  const pin = section?.querySelector(".story__pin");
   const panels = Array.from(document.querySelectorAll(".story__panel"));
   const heroMeta = section?.querySelector(".story__meta");
   if (!section || !panels.length) return;
@@ -561,6 +562,9 @@ function initStoryScroll(logo, lenis) {
     return null;
   };
 
+  const viewportHeight = () =>
+    Math.round(window.visualViewport?.height || window.innerHeight || 1);
+
   activatePanel(REDUCED_MOTION ? "about" : null);
 
   if (REDUCED_MOTION) {
@@ -571,11 +575,11 @@ function initStoryScroll(logo, lenis) {
 
   const getBounds = () => {
     const start = section.offsetTop;
-    const distance = Math.max(section.offsetHeight - window.innerHeight, 1);
+    const distance = Math.max(section.offsetHeight - viewportHeight(), 1);
     return { start, end: start + distance, distance };
   };
 
-  const getScrollY = () => (lenis ? lenis.scroll : window.scrollY);
+  const getScrollY = () => (lenis ? lenis.scroll : window.scrollY || window.pageYOffset);
 
   const closestStep = (progress) =>
     checkpoints.reduce(
@@ -688,7 +692,7 @@ function initStoryScroll(logo, lenis) {
       if (touchStartY === null) return;
       const currentY = event.touches[0]?.clientY;
       if (currentY === undefined) return;
-      // Logo is actively orbiting (horizontal drag) â€” don't fight it.
+      // Logo is actively orbiting (horizontal drag) — don't fight it.
       if (document.getElementById("storyCanvasWrap")?.classList.contains("is-dragging")) {
         touchStartY = currentY;
         event.preventDefault();
@@ -702,6 +706,7 @@ function initStoryScroll(logo, lenis) {
 
       const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
+      // Outside the story scroll range: never trap the gesture.
       if (scrollY < start - 4 || scrollY > end + 4) return;
 
       const atStart = scrollY <= start + 4;
@@ -714,15 +719,16 @@ function initStoryScroll(logo, lenis) {
       // toward Proyectos (or back to the top) instead of trapping the gesture.
       if (leavingStory || !hasStep) return;
 
+      // Only lock the gesture once the swipe is clearly intentional.
+      if (Math.abs(delta) < 32) return;
+
       event.preventDefault();
       event.stopImmediatePropagation();
 
       // One swipe = one story beat. Fast flicks cannot skip panels.
       if (gestureConsumed || isStepping) return;
-      if (Math.abs(delta) >= 32) {
-        gestureConsumed = true;
-        moveOneStep(direction);
-      }
+      gestureConsumed = true;
+      moveOneStep(direction);
     },
     { passive: false, capture: true }
   );
@@ -749,6 +755,8 @@ function initStoryScroll(logo, lenis) {
     trigger: section,
     start: "top top",
     end: "bottom bottom",
+    // Pin via ScrollTrigger so Lenis + iOS Safari don't collapse CSS sticky.
+    ...(pin ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
     scrub: 0.75,
     onUpdate: (self) => {
       const progress = self.progress;
@@ -1368,7 +1376,13 @@ function initLeadForm() {
   await runPreloader();
 
   const lenis = initSmoothScroll();
-  const storyLogo = initStoryLogo();
+
+  let storyLogo = null;
+  try {
+    storyLogo = initStoryLogo();
+  } catch (err) {
+    console.error("Story logo failed to init:", err);
+  }
 
   initNav();
   initAnchorScroll(lenis);
@@ -1379,10 +1393,30 @@ function initLeadForm() {
   initProjectModal(lenis);
   initLeadForm();
 
-  requestAnimationFrame(() => {
-    storyLogo?.resize();
+  const refreshLayout = () => {
+    try {
+      storyLogo?.resize();
+    } catch (_) {
+      /* ignore */
+    }
     ScrollTrigger.refresh();
+  };
+
+  requestAnimationFrame(refreshLayout);
+  window.addEventListener("load", refreshLayout);
+  window.addEventListener("orientationchange", () => {
+    window.setTimeout(refreshLayout, 250);
   });
 
-  window.addEventListener("load", () => ScrollTrigger.refresh());
+  // iPhone (esp. Pro Max) changes visualViewport as the Safari chrome shows/hides.
+  const vv = window.visualViewport;
+  if (vv) {
+    let vvTimer = 0;
+    const onViewportChange = () => {
+      window.clearTimeout(vvTimer);
+      vvTimer = window.setTimeout(refreshLayout, 120);
+    };
+    vv.addEventListener("resize", onViewportChange);
+    vv.addEventListener("scroll", onViewportChange);
+  }
 })();
