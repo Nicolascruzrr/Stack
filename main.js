@@ -614,23 +614,6 @@ function initStoryScroll(logo, lenis) {
     return;
   }
 
-  // iPad: CSS sticky + scrub only (no GSAP pin) so scroll stays light.
-  if (isIPadDevice()) {
-    ScrollTrigger.create({
-      trigger: section,
-      start: "top top",
-      end: "bottom bottom",
-      scrub: true,
-      onUpdate: (self) => {
-        const progress = self.progress;
-        logo?.setStoryProgress(progress);
-        activatePanel(panelForProgress(progress));
-        heroMeta?.classList.toggle("is-hidden", progress > 0.075);
-      },
-    });
-    return;
-  }
-
   const getBounds = () => {
     const start = section.offsetTop;
     const distance = Math.max(section.offsetHeight - viewportHeight(), 1);
@@ -676,6 +659,9 @@ function initStoryScroll(logo, lenis) {
       });
     } else {
       window.scrollTo({ top: destination, behavior: "smooth" });
+      // Native smooth scroll has no completion callback — unlock after settle.
+      window.clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(releaseStep, 950);
     }
     return true;
   };
@@ -813,9 +799,9 @@ function initStoryScroll(logo, lenis) {
     trigger: section,
     start: "top top",
     end: "bottom bottom",
-    // Pin via ScrollTrigger so Lenis + iOS Safari don't collapse CSS sticky.
-    ...(pin ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
-    scrub: 0.75,
+    // iPad keeps CSS sticky (lighter); phone/desktop pin via ScrollTrigger.
+    ...(pin && !isIPadDevice() ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
+    scrub: isIPadDevice() ? 0.35 : 0.75,
     onUpdate: (self) => {
       const progress = self.progress;
       logo?.setStoryProgress(progress);

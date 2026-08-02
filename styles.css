@@ -1128,10 +1128,7 @@ section{position:relative;z-index:var(--z-content);}
   .story{height:420vh;height:420dvh;}
   .story__pin{touch-action:none;}
   .story__canvas-wrap{touch-action:none;}
-  /* iPad uses native scroll — never trap the gesture on the story stage. */
-  body.is-ipad .story__pin,
-  body.is-ipad .story__canvas-wrap{touch-action:pan-y;}
-  body.is-ipad .story{height:240vh;}
+  body.is-ipad .story{height:320vh;}
   body.is-ipad .work{padding:4rem 0 3rem;}
   body.is-ipad .work__pin{min-height:auto;padding:0;overflow:visible;}
   body.is-ipad .work__viewport{
