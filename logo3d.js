@@ -773,7 +773,6 @@ export class StackLogo3D {
 
     this.camera.aspect = rect.width / rect.height;
     this.camera.updateProjectionMatrix();
-    const ipad = isIPadDevice();
     this.renderer.setPixelRatio(
       Math.min(window.devicePixelRatio || 1, ipad ? 1.5 : mobile ? 1.5 : 1.85)
     );
