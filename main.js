@@ -673,6 +673,31 @@ function initStoryScroll(logo, lenis) {
     return nextStep !== step;
   };
 
+  // When Lenis is off (iPad) and story uses touch-action:none, the browser
+  // cannot pan past the sticky pin — drive the exit into Proyectos ourselves.
+  const scrollPastStory = (direction) => {
+    const { start } = getBounds();
+    const destination =
+      direction > 0
+        ? section.offsetTop + section.offsetHeight
+        : Math.max(0, start - Math.round(viewportHeight() * 0.2));
+    isStepping = true;
+    releaseTimer = window.setTimeout(releaseStep, 1600);
+    if (lenis) {
+      lenis.scrollTo(destination, {
+        duration: 0.95,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+        lock: true,
+        force: true,
+        onComplete: releaseStep,
+      });
+    } else {
+      window.scrollTo({ top: destination, behavior: "smooth" });
+      window.clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(releaseStep, 1000);
+    }
+  };
+
   window.addEventListener(
     "wheel",
     (event) => {
@@ -682,9 +707,23 @@ function initStoryScroll(logo, lenis) {
       const direction = Math.sign(event.deltaY);
       if (!direction || Math.abs(event.deltaY) < 6) return;
       if (scrollY < start - 2 || scrollY > end + 2) return;
-      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
+      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          scrollPastStory(direction);
+        }
+        return;
+      }
       // Last/first beat: release to Lenis for the same smooth exit as desktop.
-      if (!canStepInDirection(scrollY, direction, start, distance)) return;
+      if (!canStepInDirection(scrollY, direction, start, distance)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          scrollPastStory(direction);
+        }
+        return;
+      }
 
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -711,8 +750,20 @@ function initStoryScroll(logo, lenis) {
       const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
       if (scrollY < start - 2 || scrollY > end + 2) return;
-      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
-      if (!canStepInDirection(scrollY, direction, start, distance)) return;
+      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          scrollPastStory(direction);
+        }
+        return;
+      }
+      if (!canStepInDirection(scrollY, direction, start, distance)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          scrollPastStory(direction);
+        }
+        return;
+      }
 
       event.preventDefault();
       if (!isStepping) moveOneStep(direction);
@@ -759,9 +810,18 @@ function initStoryScroll(logo, lenis) {
         (direction < 0 && atStart) || (direction > 0 && atEnd);
       const hasStep = canStepInDirection(scrollY, direction, start, distance);
 
-      // Same as desktop: at the story edge, let Lenis own the smooth scroll
-      // toward Proyectos (or back to the top) instead of trapping the gesture.
-      if (leavingStory || !hasStep) return;
+      // Lenis owns the smooth exit on phone/desktop. On iPad (no Lenis) the
+      // sticky pin uses touch-action:none, so we must scroll past ourselves.
+      if (leavingStory || !hasStep) {
+        if (lenis) return;
+        if (Math.abs(delta) < 40) return;
+        if (gestureConsumed || isStepping) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        gestureConsumed = true;
+        scrollPastStory(direction);
+        return;
+      }
 
       // Only lock the gesture once the swipe is clearly intentional.
       if (Math.abs(delta) < 32) return;
@@ -820,8 +880,6 @@ function initWork() {
   const pin = document.getElementById("workPin");
   const track = document.getElementById("workTrack");
   if (!section || !pin || !track || REDUCED_MOTION) return;
-  // iPad: native horizontal swipe instead of a pinned GSAP scrub.
-  if (isIPadDevice()) return;
 
   const media = gsap.matchMedia();
   media.add("(min-width: 0px)", () => {
@@ -832,13 +890,16 @@ function initWork() {
       scrollTrigger: {
         trigger: section,
         start: "top top",
-        end: () => `+=${distance()}`,
+        end: () => `+=${Math.max(distance(), window.innerWidth * 0.5)}`,
         pin,
-        scrub: 1,
+        scrub: isIPadDevice() ? 0.65 : 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
       },
     });
+
+    // Images / fonts can change track width after first measure.
+    requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
       tween.scrollTrigger?.kill();
