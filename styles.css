@@ -619,20 +619,24 @@ section{position:relative;z-index:var(--z-content);}
   height:clamp(22rem,56vh,36rem);
   overflow:hidden;
   border-radius:16px;
-  background:var(--grey-950);
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  outline:none;
 }
+.work__media::before,
 .work__media::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  border:1px solid rgba(255,255,255,.1);
-  border-radius:inherit;
-  pointer-events:none;
+  content:none !important;
+  display:none !important;
+  border:0 !important;
 }
 .work__media img{
   width:100%;
   height:100%;
   object-fit:cover;
+  border:0;
+  outline:none;
+  box-shadow:none;
   transition:transform .9s var(--ease-out);
 }
 .work__card:hover .work__media img{
@@ -1206,7 +1210,8 @@ section{position:relative;z-index:var(--z-content);}
 
 /* iPad portrait + landscape (class set in JS; width can exceed 1100 in landscape) */
 body.is-ipad .story{
-  height:320vh;
+  height:360vh;
+  height:360dvh;
 }
 body.is-ipad .story__pin{
   height:100vh;
@@ -1253,21 +1258,37 @@ body.is-ipad .story__panel{
   max-width:min(34rem,100%);
 }
 body.is-ipad .story__panel.is-active{transform:translateY(0);}
+/* iPad projects: stable native horizontal swipe (no GSAP pin fight). */
+body.is-ipad{
+  overscroll-behavior-y:none;
+}
 body.is-ipad .work{padding:4rem 0 3rem;}
-body.is-ipad .work__pin{min-height:auto;padding:0;overflow:visible;}
+body.is-ipad .work__pin{
+  min-height:auto;
+  padding:0;
+  overflow:visible;
+}
 body.is-ipad .work__viewport{
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
-  overscroll-behavior-inline:contain;
+  overscroll-behavior-x:contain;
+  overscroll-behavior-y:none;
   scrollbar-width:none;
+  touch-action:pan-x;
 }
 body.is-ipad .work__viewport::-webkit-scrollbar{display:none;}
 body.is-ipad .work__track{
   scroll-snap-type:x mandatory;
   will-change:auto;
+  padding-bottom:1.25rem;
 }
 body.is-ipad .work__card{
   scroll-snap-align:center;
-  flex-basis:min(76vw,42rem);
+  flex:0 0 min(76vw,42rem);
   width:min(76vw,42rem);
+}
+body.is-ipad .work__media{
+  height:auto;
+  aspect-ratio:16 / 10;
+  max-height:min(48vh,28rem);
 }

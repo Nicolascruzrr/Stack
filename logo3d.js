@@ -597,7 +597,10 @@ export class StackLogo3D {
       }
       this._clearPointerState();
     };
-    this._onResize = () => this.resize();
+    this._onResize = () => {
+      window.clearTimeout(this._resizeTimer);
+      this._resizeTimer = window.setTimeout(() => this.resize(), 120);
+    };
 
     this.wrap.addEventListener("pointerdown", this._onPointerDown, { passive: false });
     window.addEventListener("pointermove", this._onPointerMove, { passive: false });
@@ -613,7 +616,7 @@ export class StackLogo3D {
         entries.forEach((entry) => {
           this.visible = entry.isIntersecting;
           if (this.visible) {
-            this.resize();
+            // Do not resize here — Safari/iPad IO + pin churn was blanking the canvas.
             this.start();
           } else if (entry.intersectionRatio === 0 && entry.boundingClientRect.bottom < 0) {
             // Only pause once the hero has scrolled fully away.
@@ -621,7 +624,7 @@ export class StackLogo3D {
           }
         });
       },
-      { threshold: [0, 0.02, 0.1], rootMargin: "10% 0px" }
+      { threshold: [0, 0.02], rootMargin: "20% 0px" }
     );
     this._io.observe(this.wrap);
   }
@@ -788,14 +791,22 @@ export class StackLogo3D {
 
     this.camera.aspect = rect.width / rect.height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, ipad ? 1.5 : mobile ? 1.5 : 1.85)
+
+    const drawW = Math.max(1, Math.round(rect.width));
+    const drawH = Math.max(1, Math.round(rect.height));
+    const pixelRatio = Math.min(
+      window.devicePixelRatio || 1,
+      ipad ? 1.5 : mobile ? 1.5 : 1.85
     );
-    this.renderer.setSize(
-      Math.max(1, rect.width),
-      Math.max(1, rect.height),
-      false
-    );
+    // Avoid setSize/setPixelRatio when unchanged — those clear the buffer and flicker on iPad.
+    if (this._drawW !== drawW || this._drawH !== drawH || this._pixelRatio !== pixelRatio) {
+      this._drawW = drawW;
+      this._drawH = drawH;
+      this._pixelRatio = pixelRatio;
+      this.renderer.setPixelRatio(pixelRatio);
+      this.renderer.setSize(drawW, drawH, false);
+    }
+
     this.bars?.forEach(({ mesh, engraving, rearEngraving }) => {
       mesh.scale.setScalar(this.barScale);
       const engravingScaleY = mobile ? 1.45 : 1;
@@ -1025,6 +1036,7 @@ export class StackLogo3D {
 
   dispose() {
     this.stop();
+    window.clearTimeout(this._resizeTimer);
     this.wrap.removeEventListener("pointerdown", this._onPointerDown);
     window.removeEventListener("pointermove", this._onPointerMove);
     window.removeEventListener("pointerup", this._onPointerUp);
