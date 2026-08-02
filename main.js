@@ -269,8 +269,6 @@ function initParticles() {
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
 
-  const ipad = isIPadDevice();
-
   let width = window.innerWidth;
   let height = window.innerHeight;
   let dpr = 1;
@@ -297,7 +295,6 @@ function initParticles() {
 
   const getParticleCount = () => {
     if (REDUCED_MOTION) return 110;
-    if (ipad) return 70;
     if (window.innerWidth <= 600) return 300;
     if (window.innerWidth <= 1024) return 500;
     return 780;
@@ -381,7 +378,7 @@ function initParticles() {
   function initialize() {
     width = window.innerWidth;
     height = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, ipad ? 1 : 1.75);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.75);
 
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -408,14 +405,6 @@ function initParticles() {
   }
 
   function animate() {
-    if (ipad) {
-      animate._skip = !animate._skip;
-      if (animate._skip) {
-        animationFrameId = requestAnimationFrame(animate);
-        return;
-      }
-    }
-
     // Smoothly follow pointer velocity, then decay when the pointer stops.
     flowMotion.pointerX += (flowMotion.pointerTargetX - flowMotion.pointerX) * 0.14;
     flowMotion.pointerY += (flowMotion.pointerTargetY - flowMotion.pointerY) * 0.14;
@@ -430,7 +419,7 @@ function initParticles() {
     flowMotion.phaseX += flowMotion.pointerX * 0.7 + flowMotion.gustX * 0.85;
     flowMotion.phaseY += flowMotion.pointerY * 0.7 + flowMotion.gustY * 0.85;
 
-    ctx.fillStyle = `rgba(0, 0, 0, ${ipad ? 0.16 : trailOpacity})`;
+    ctx.fillStyle = `rgba(0, 0, 0, ${trailOpacity})`;
     ctx.fillRect(0, 0, width, height);
 
     particles.forEach((particle) => {
