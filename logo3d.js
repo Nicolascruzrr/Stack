@@ -81,22 +81,22 @@ function drawTrackedText(ctx, text, centerX, baselineY, tracking) {
 function createEngravingTexture(text, index) {
   const canvas = document.createElement("canvas");
   const ipad = isIPadDevice();
-  canvas.width = ipad ? 1536 : 2048;
-  canvas.height = ipad ? 240 : 320;
+  canvas.width = ipad ? 1024 : 2048;
+  canvas.height = ipad ? 160 : 320;
   const ctx = canvas.getContext("2d");
   const longLine = index === 2;
   const fontSize = ipad
     ? longLine
-      ? 40
+      ? 28
       : index === 1
-        ? 56
-        : 68
+        ? 40
+        : 48
     : longLine
       ? 48
       : index === 1
         ? 68
         : 82;
-  const tracking = longLine ? (ipad ? 5 : 6) : ipad ? 9 : 11;
+  const tracking = longLine ? (ipad ? 3 : 6) : ipad ? 6 : 11;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgba(255,255,255,0.82)";
@@ -106,7 +106,7 @@ function createEngravingTexture(text, index) {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = ipad ? 4 : 8;
+  texture.anisotropy = ipad ? 1 : 8;
   texture.needsUpdate = true;
   return texture;
 }
@@ -255,7 +255,6 @@ export class StackLogo3D {
     this.autoRotation = 0;
     this.isMobile = false;
     this.isTabletPortrait = false;
-    this.isIpadLandscape = false;
     this.ipad = false;
     this.barScale = 1;
     this.baseScale = 1;
@@ -685,13 +684,8 @@ export class StackLogo3D {
   }
 
   _cameraAt(progress) {
-    if (this.isIpadLandscape) {
-      // Closer camera = larger logo on iPad horizontal.
-      return { ...CAMERA_HOME, y: 0.22, z: 7.4, ty: 0.05 };
-    }
-    if (this.isTabletPortrait || (this.ipad && !this.isIpadLandscape)) {
-      // Slightly higher framing so meta (top) + copy/CTA (bottom) clear the bars.
-      return { ...CAMERA_HOME, y: 0.55, z: 10.8, ty: 0.32 };
+    if (this.isTabletPortrait) {
+      return { ...CAMERA_HOME, y: 0.4, z: 8.6, ty: 0.18 };
     }
     if (this.isMobile) {
       return { ...CAMERA_HOME, y: 0.42, ty: 0.2 };
@@ -746,21 +740,13 @@ export class StackLogo3D {
     const height = window.innerHeight;
     const mobile = width <= 1100;
     const compactMobile = width <= 600;
-    const ipad = isIPadDevice();
     // iPad / tablet portrait only — phones and landscape stay unchanged.
     const tabletPortrait = mobile && !compactMobile && height > width;
-    const ipadLandscape = ipad && width > height;
 
-    this.isMobile = mobile || ipad;
+    this.isMobile = mobile;
     this.isTabletPortrait = tabletPortrait;
-    this.isIpadLandscape = ipadLandscape;
 
-    if (ipadLandscape) {
-      // Bigger bars for iPad horizontal only.
-      this.barScale = 1.12;
-      this.baseScale = 1.28;
-      this.camera.fov = 34;
-    } else if (tabletPortrait || (ipad && height > width)) {
+    if (tabletPortrait) {
       this.barScale = 0.95;
       this.baseScale = 1.08;
       this.camera.fov = 40;

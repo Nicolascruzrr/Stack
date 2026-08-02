@@ -441,18 +441,9 @@
 <!-- Independent of modules: if main.js/Three never boots, still leave the loading mark. -->
 <script>
 (function () {
-  function syncIPad() {
-    var isIpad =
-      /iPad/.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    document.body.classList.toggle("is-ipad", isIpad);
-    document.body.classList.toggle(
-      "is-ipad-landscape",
-      isIpad && window.innerWidth > window.innerHeight
-    );
+  if (/iPad|Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1) {
+    document.body.classList.add("is-ipad");
   }
-  syncIPad();
-  window.addEventListener("resize", syncIPad, { passive: true });
   window.setTimeout(function () {
     var el = document.getElementById("preloader");
     if (!el || el.getAttribute("data-done") === "1") return;
