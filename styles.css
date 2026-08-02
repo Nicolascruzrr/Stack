@@ -1224,21 +1224,26 @@ body.is-ipad .story__stage{
 body.is-ipad .story__meta{
   display:grid !important;
   bottom:clamp(2.75rem,6vh,4.25rem);
-  width:calc(100% - var(--edge));
+  width:calc(100% - 0.75rem);
   left:0;
   right:auto;
 }
 body.is-ipad .story__meta.meta__grid{
-  width:calc(100% - var(--edge));
-  padding-left:var(--edge);
+  width:calc(100% - 0.75rem);
+  padding-left:0.75rem;
   gap:.65rem;
 }
 body.is-ipad .story__meta .meta__item{
   padding:.65rem 0 .1rem;
-  padding-left:.7rem;
+  padding-left:.55rem;
 }
 body.is-ipad .story__meta .meta__label{font-size:.52rem;letter-spacing:.1em;}
 body.is-ipad .story__meta .meta__value{font-size:.62rem;max-width:18ch;}
+@media (orientation: landscape){
+  body.is-ipad .story__meta{
+    bottom:clamp(3.5rem,7.5vh,5rem);
+  }
+}
 body.is-ipad .story__panel{
   top:auto;
   bottom:clamp(1.75rem,4vh,3rem);
