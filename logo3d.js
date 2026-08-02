@@ -3,7 +3,7 @@
    Existing three-bar STACK mark. Soft cursor parallax +
    scroll-driven story poses via setStoryProgress().
    ============================================================ */
-import * as THREE from "three";
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1028,11 +1028,42 @@ export class StackLogo3D {
 
 export function initStoryLogo() {
   const canvas = document.getElementById("storyCanvas");
+  const wrap = document.getElementById("storyCanvasWrap");
   if (!canvas) return null;
+
+  const showFallback = () => {
+    if (!wrap || wrap.querySelector(".story__fallback")) return;
+    const img = document.createElement("img");
+    img.className = "story__fallback";
+    img.src = "assets/images/stack-mark-white.png";
+    img.alt = "";
+    img.width = 411;
+    img.height = 429;
+    wrap.appendChild(img);
+    canvas.style.opacity = "0";
+  };
+
+  try {
+    const probe = document.createElement("canvas");
+    const gl =
+      probe.getContext("webgl2", { failIfMajorPerformanceCaveat: false }) ||
+      probe.getContext("webgl", { failIfMajorPerformanceCaveat: false });
+    if (!gl) {
+      console.warn("WebGL unavailable");
+      showFallback();
+      return null;
+    }
+  } catch (err) {
+    console.warn("WebGL probe failed:", err);
+    showFallback();
+    return null;
+  }
+
   try {
     return new StackLogo3D(canvas);
   } catch (err) {
     console.error("WebGL story logo unavailable:", err);
+    showFallback();
     return null;
   }
 }

@@ -265,13 +265,11 @@ function initNav() {
    Vanilla Canvas adaptation of the supplied React component.
    --------------------------------------------------------- */
 function initParticles() {
-  // On iPad the full-screen flow field competes with WebGL and kills scroll.
-  // Grain CSS still gives atmosphere; iPhone keeps the animated field.
-  if (isIPadDevice()) return;
-
   const canvas = document.getElementById("bgParticles");
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
+
+  const ipad = isIPadDevice();
 
   let width = window.innerWidth;
   let height = window.innerHeight;
@@ -299,6 +297,7 @@ function initParticles() {
 
   const getParticleCount = () => {
     if (REDUCED_MOTION) return 110;
+    if (ipad) return 70;
     if (window.innerWidth <= 600) return 300;
     if (window.innerWidth <= 1024) return 500;
     return 780;
@@ -382,7 +381,7 @@ function initParticles() {
   function initialize() {
     width = window.innerWidth;
     height = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    dpr = Math.min(window.devicePixelRatio || 1, ipad ? 1 : 1.75);
 
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -409,6 +408,14 @@ function initParticles() {
   }
 
   function animate() {
+    if (ipad) {
+      animate._skip = !animate._skip;
+      if (animate._skip) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
+    }
+
     // Smoothly follow pointer velocity, then decay when the pointer stops.
     flowMotion.pointerX += (flowMotion.pointerTargetX - flowMotion.pointerX) * 0.14;
     flowMotion.pointerY += (flowMotion.pointerTargetY - flowMotion.pointerY) * 0.14;
@@ -423,7 +430,7 @@ function initParticles() {
     flowMotion.phaseX += flowMotion.pointerX * 0.7 + flowMotion.gustX * 0.85;
     flowMotion.phaseY += flowMotion.pointerY * 0.7 + flowMotion.gustY * 0.85;
 
-    ctx.fillStyle = `rgba(0, 0, 0, ${trailOpacity})`;
+    ctx.fillStyle = `rgba(0, 0, 0, ${ipad ? 0.16 : trailOpacity})`;
     ctx.fillRect(0, 0, width, height);
 
     particles.forEach((particle) => {
@@ -607,14 +614,13 @@ function initStoryScroll(logo, lenis) {
     return;
   }
 
-  // iPad: native momentum scroll + scrub only. No touch/wheel step locking.
+  // iPad: CSS sticky + scrub only (no GSAP pin) so scroll stays light.
   if (isIPadDevice()) {
     ScrollTrigger.create({
       trigger: section,
       start: "top top",
       end: "bottom bottom",
-      ...(pin ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
-      scrub: 0.4,
+      scrub: true,
       onUpdate: (self) => {
         const progress = self.progress;
         logo?.setStoryProgress(progress);
@@ -828,6 +834,8 @@ function initWork() {
   const pin = document.getElementById("workPin");
   const track = document.getElementById("workTrack");
   if (!section || !pin || !track || REDUCED_MOTION) return;
+  // iPad: native horizontal swipe instead of a pinned GSAP scrub.
+  if (isIPadDevice()) return;
 
   const media = gsap.matchMedia();
   media.add("(min-width: 0px)", () => {
@@ -1436,11 +1444,20 @@ function initLeadForm() {
 
   let storyLogo = null;
   try {
-    // Load Three.js only after the page is visible.
     const { initStoryLogo } = await import("./logo3d.js");
     storyLogo = initStoryLogo();
   } catch (err) {
     console.error("Story logo failed to init:", err);
+    const wrap = document.getElementById("storyCanvasWrap");
+    const canvas = document.getElementById("storyCanvas");
+    if (wrap && !wrap.querySelector(".story__fallback")) {
+      const img = document.createElement("img");
+      img.className = "story__fallback";
+      img.src = "assets/images/stack-mark-white.png";
+      img.alt = "";
+      wrap.appendChild(img);
+      if (canvas) canvas.style.opacity = "0";
+    }
   }
 
   if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
