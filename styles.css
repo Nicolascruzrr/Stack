@@ -1223,7 +1223,7 @@ body.is-ipad .story__stage{
 /* iPad: show Location / Somos / Desde, raised so it clears the home bar. */
 body.is-ipad .story__meta{
   display:grid !important;
-  bottom:clamp(5.5rem,12vh,8.5rem);
+  bottom:clamp(3.75rem,8vh,5.5rem);
   width:calc(100% - var(--edge));
   left:0;
   right:auto;
