@@ -84,19 +84,16 @@ function runPreloader() {
    --------------------------------------------------------- */
 function initSmoothScroll() {
   if (REDUCED_MOTION) return null;
-  // iPad Safari already has excellent native momentum scroll.
-  // Lenis syncTouch + story gesture locking is what made it feel sticky/slow.
-  if (isIPadDevice()) return null;
 
+  const ipad = isIPadDevice();
   const lenis = new Lenis({
-    duration: 1.1,
+    duration: ipad ? 1.15 : 1.1,
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     smoothWheel: true,
-    // Mobile touch must go through Lenis (story pin uses touch-action:none),
-    // so exiting the logo beat feels like desktop smooth scroll into Proyectos.
+    // Touch goes through Lenis so story exit + work scrub feel like desktop.
     syncTouch: true,
-    syncTouchLerp: 0.085,
-    touchMultiplier: 1.15,
+    syncTouchLerp: ipad ? 0.1 : 0.085,
+    touchMultiplier: ipad ? 1.05 : 1.15,
     autoRaf: false,
     // Keep page Lenis from eating wheel/touch while a modal scrolls.
     prevent: (node) => Boolean(node.closest?.("#projectModal")),
@@ -846,9 +843,8 @@ function initStoryScroll(logo, lenis) {
     trigger: section,
     start: "top top",
     end: "bottom bottom",
-    // iPad keeps CSS sticky (lighter); phone/desktop pin via ScrollTrigger.
-    ...(pin && !isIPadDevice() ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
-    scrub: isIPadDevice() ? 0.35 : 0.75,
+    ...(pin ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
+    scrub: 0.75,
     onUpdate: (self) => {
       const progress = self.progress;
       logo?.setStoryProgress(progress);
@@ -867,8 +863,6 @@ function initWork() {
   const pin = document.getElementById("workPin");
   const track = document.getElementById("workTrack");
   if (!section || !pin || !track || REDUCED_MOTION) return;
-  // iPad: native horizontal swipe instead of a pinned GSAP scrub.
-  if (isIPadDevice()) return;
 
   const media = gsap.matchMedia();
   media.add("(min-width: 0px)", () => {
@@ -879,13 +873,15 @@ function initWork() {
       scrollTrigger: {
         trigger: section,
         start: "top top",
-        end: () => `+=${distance()}`,
+        end: () => `+=${Math.max(distance(), window.innerWidth * 0.5)}`,
         pin,
         scrub: 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
       },
     });
+
+    requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
       tween.scrollTrigger?.kill();
