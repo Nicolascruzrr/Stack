@@ -28,7 +28,7 @@ function smoothstep(edge0, edge1, x) {
   return t * t * (3 - 2 * t);
 }
 
-function createRoundedBoxGeometry(width, height, depth, radius = 0.055) {
+function createRoundedBoxGeometry(width, height, depth, radius = 0.055, lite = false) {
   const shape = new THREE.Shape();
   const x = -width / 2;
   const y = -height / 2;
@@ -46,10 +46,10 @@ function createRoundedBoxGeometry(width, height, depth, radius = 0.055) {
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth: depth - 0.04,
     bevelEnabled: true,
-    bevelSegments: 4,
+    bevelSegments: lite ? 1 : 4,
     bevelSize: 0.02,
     bevelThickness: 0.02,
-    curveSegments: 8,
+    curveSegments: lite ? 3 : 8,
     steps: 1,
   });
   geometry.center();
@@ -255,6 +255,7 @@ export class StackLogo3D {
     this.autoRotation = 0;
     this.isMobile = false;
     this.isTabletPortrait = false;
+    this.ipad = false;
     this.barScale = 1;
     this.baseScale = 1;
 
@@ -268,18 +269,23 @@ export class StackLogo3D {
   _initScene() {
     const rect = this.wrap.getBoundingClientRect();
     const ipad = isIPadDevice();
+    this.ipad = ipad;
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       alpha: true,
-      // iPhone stays sharp; iPad needs cheaper fill-rate on a much larger screen.
       antialias: !ipad,
       powerPreference: ipad ? "default" : "high-performance",
+      failIfMajorPerformanceCaveat: false,
     });
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, ipad ? 1 : 1.85)
+    // iPad: render at lower internal res, stretch with CSS — biggest smoothness win.
+    const bufferScale = ipad ? 0.62 : 1;
+    this.renderer.setPixelRatio(ipad ? 1 : Math.min(window.devicePixelRatio || 1, 1.85));
+    this.renderer.setSize(
+      Math.max(1, (rect.width || 1) * bufferScale),
+      Math.max(1, (rect.height || 1) * bufferScale),
+      false
     );
-    this.renderer.setSize(rect.width || 1, rect.height || 1, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
@@ -290,37 +296,57 @@ export class StackLogo3D {
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x000000, 9, 28);
-    this.environment = createStudioEnvironment(this.renderer);
-    this.scene.environment = this.environment;
+    // PMREM studio env is expensive on iPad Metal — skip it.
+    this.environment = ipad ? null : createStudioEnvironment(this.renderer);
+    if (this.environment) this.scene.environment = this.environment;
     this.camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
     this.camera.position.set(0, 0.35, 9.2);
 
-    this.scene.add(new THREE.HemisphereLight(0xe8eef2, 0x111315, ipad ? 0.75 : 0.58));
+    this.scene.add(
+      new THREE.HemisphereLight(0xe8eef2, 0x111315, ipad ? 1.05 : 0.58)
+    );
 
-    this.key = new THREE.SpotLight(0xfffcf6, 82, 32, Math.PI / 5.5, 0.82, 1.35);
-    this.key.position.set(3.8, 7.5, 5.2);
-    this.key.castShadow = !ipad;
-    if (!ipad) {
+    if (ipad) {
+      // Cheap lights that still read metallic without SpotLight + shadows.
+      this.key = new THREE.DirectionalLight(0xfffcf6, 2.6);
+      this.key.position.set(3.8, 7.5, 5.2);
+      this.scene.add(this.key);
+
+      this.fill = new THREE.DirectionalLight(0xc9e4f2, 1.1);
+      this.fill.position.set(-6.5, 2.2, 5.8);
+      this.scene.add(this.fill);
+
+      this.rim = new THREE.DirectionalLight(0xffffff, 1.4);
+      this.rim.position.set(1.5, 3.2, -6);
+      this.scene.add(this.rim);
+
+      this.lowerFill = new THREE.PointLight(0xaebcc5, 8, 14, 2);
+      this.lowerFill.position.set(0, -3.5, 3);
+      this.scene.add(this.lowerFill);
+    } else {
+      this.key = new THREE.SpotLight(0xfffcf6, 82, 32, Math.PI / 5.5, 0.82, 1.35);
+      this.key.position.set(3.8, 7.5, 5.2);
+      this.key.castShadow = true;
       this.key.shadow.mapSize.set(1024, 1024);
       this.key.shadow.bias = -0.00035;
       this.key.shadow.normalBias = 0.025;
+      this.key.target.position.set(0, 0, 0);
+      this.scene.add(this.key, this.key.target);
+
+      this.fill = new THREE.SpotLight(0xc9e4f2, 25, 28, Math.PI / 4, 0.9, 1.5);
+      this.fill.position.set(-6.5, 2.2, 5.8);
+      this.fill.target.position.set(0, 0, 0);
+      this.scene.add(this.fill, this.fill.target);
+
+      this.rim = new THREE.SpotLight(0xffffff, 58, 30, Math.PI / 5, 0.9, 1.25);
+      this.rim.position.set(1.5, 3.2, -6);
+      this.rim.target.position.set(0, 0, 0);
+      this.scene.add(this.rim, this.rim.target);
+
+      this.lowerFill = new THREE.PointLight(0xaebcc5, 4.5, 12, 2);
+      this.lowerFill.position.set(0, -3.5, 3);
+      this.scene.add(this.lowerFill);
     }
-    this.key.target.position.set(0, 0, 0);
-    this.scene.add(this.key, this.key.target);
-
-    this.fill = new THREE.SpotLight(0xc9e4f2, 25, 28, Math.PI / 4, 0.9, 1.5);
-    this.fill.position.set(-6.5, 2.2, 5.8);
-    this.fill.target.position.set(0, 0, 0);
-    this.scene.add(this.fill, this.fill.target);
-
-    this.rim = new THREE.SpotLight(0xffffff, 58, 30, Math.PI / 5, 0.9, 1.25);
-    this.rim.position.set(1.5, 3.2, -6);
-    this.rim.target.position.set(0, 0, 0);
-    this.scene.add(this.rim, this.rim.target);
-
-    this.lowerFill = new THREE.PointLight(0xaebcc5, 4.5, 12, 2);
-    this.lowerFill.position.set(0, -3.5, 3);
-    this.scene.add(this.lowerFill);
 
     // These broad lights are reserved for the separated scroll poses.
     // Their intensity stays at zero while the assembled logo is in the hero.
@@ -342,23 +368,40 @@ export class StackLogo3D {
     const barWidth = 2.7;
     const barHeight = 0.52;
     const barDepth = 0.85;
-    const barGeo = createRoundedBoxGeometry(barWidth, barHeight, barDepth);
+    const barGeo = createRoundedBoxGeometry(
+      barWidth,
+      barHeight,
+      barDepth,
+      0.055,
+      ipad
+    );
 
     this.bars = HOME.map((pose, index) => {
-      const material = new THREE.MeshPhysicalMaterial({
-        color: 0xbfc4c7,
-        emissive: 0x111315,
-        emissiveIntensity: 0.03,
-        metalness: 0.96,
-        roughness: 0.29,
-        anisotropy: ipad ? 0 : 0.72,
-        anisotropyRotation: Math.PI / 2,
-        clearcoat: ipad ? 0 : 0.12,
-        clearcoatRoughness: 0.38,
-        envMapIntensity: 1.65,
-        transparent: true,
-        opacity: 1,
-      });
+      const material = ipad
+        ? new THREE.MeshStandardMaterial({
+            color: 0xc2c7ca,
+            emissive: 0x15181a,
+            emissiveIntensity: 0.06,
+            metalness: 0.9,
+            roughness: 0.34,
+            envMapIntensity: 1,
+            transparent: true,
+            opacity: 1,
+          })
+        : new THREE.MeshPhysicalMaterial({
+            color: 0xbfc4c7,
+            emissive: 0x111315,
+            emissiveIntensity: 0.03,
+            metalness: 0.96,
+            roughness: 0.29,
+            anisotropy: 0.72,
+            anisotropyRotation: Math.PI / 2,
+            clearcoat: 0.12,
+            clearcoatRoughness: 0.38,
+            envMapIntensity: 1.65,
+            transparent: true,
+            opacity: 1,
+          });
       const mesh = new THREE.Mesh(barGeo, material);
       mesh.position.set(pose.x, pose.y, pose.z);
       mesh.castShadow = !ipad;
@@ -370,22 +413,38 @@ export class StackLogo3D {
         "SANTO DOMINGO • DOMINICAN REPUBLIC",
       ];
       const engravingTexture = createEngravingTexture(inscriptions[index], index);
-      const engravingMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x0b0c0d,
-        emissive: 0xffffff,
-        emissiveIntensity: 0,
-        map: engravingTexture,
-        alphaMap: engravingTexture,
-        metalness: 0.78,
-        roughness: 0.5,
-        transparent: true,
-        opacity: index === 2 ? 0.68 : 0.74,
-        depthWrite: false,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-        envMapIntensity: 0.45,
-        toneMapped: false,
-      });
+      const engravingMaterial = ipad
+        ? new THREE.MeshStandardMaterial({
+            color: 0x0b0c0d,
+            emissive: 0xffffff,
+            emissiveIntensity: 0,
+            map: engravingTexture,
+            alphaMap: engravingTexture,
+            metalness: 0.7,
+            roughness: 0.55,
+            transparent: true,
+            opacity: index === 2 ? 0.68 : 0.74,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            toneMapped: false,
+          })
+        : new THREE.MeshPhysicalMaterial({
+            color: 0x0b0c0d,
+            emissive: 0xffffff,
+            emissiveIntensity: 0,
+            map: engravingTexture,
+            alphaMap: engravingTexture,
+            metalness: 0.78,
+            roughness: 0.5,
+            transparent: true,
+            opacity: index === 2 ? 0.68 : 0.74,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            envMapIntensity: 0.45,
+            toneMapped: false,
+          });
       const engravingGeometry = new THREE.PlaneGeometry(
         barWidth * 0.82,
         barHeight * 0.58
@@ -705,13 +764,16 @@ export class StackLogo3D {
 
     this.camera.aspect = rect.width / rect.height;
     this.camera.updateProjectionMatrix();
+    const ipad = isIPadDevice();
+    const bufferScale = ipad ? 0.62 : 1;
     this.renderer.setPixelRatio(
-      Math.min(
-        window.devicePixelRatio || 1,
-        isIPadDevice() ? 1 : mobile ? 1.5 : 1.85
-      )
+      Math.min(window.devicePixelRatio || 1, ipad ? 1 : mobile ? 1.5 : 1.85)
     );
-    this.renderer.setSize(rect.width, rect.height, false);
+    this.renderer.setSize(
+      Math.max(1, rect.width * bufferScale),
+      Math.max(1, rect.height * bufferScale),
+      false
+    );
     this.bars?.forEach(({ mesh, engraving, rearEngraving }) => {
       mesh.scale.setScalar(this.barScale);
       const engravingScaleY = mobile ? 1.45 : 1;
@@ -826,13 +888,23 @@ export class StackLogo3D {
     const storyLighting =
       smoothstep(0.1, 0.18, this.storyProgress) *
       (1 - smoothstep(0.88, 0.97, this.storyProgress));
-    this.key.intensity = lerp(82, this.isMobile ? 120 : 220, storyLighting);
-    this.fill.intensity = lerp(25, this.isMobile ? 48 : 90, storyLighting);
-    this.rim.intensity = lerp(58, this.isMobile ? 105 : 180, storyLighting);
-    this.lowerFill.intensity = lerp(4.5, this.isMobile ? 12 : 25, storyLighting);
-    this.storyKey.intensity = (this.isMobile ? 0.5 : 1.4) * storyLighting;
-    this.storyFill.intensity = (this.isMobile ? 0.28 : 0.8) * storyLighting;
-    this.storyRim.intensity = (this.isMobile ? 0.46 : 1.2) * storyLighting;
+    if (this.ipad) {
+      this.key.intensity = lerp(2.6, 3.5, storyLighting);
+      this.fill.intensity = lerp(1.1, 1.7, storyLighting);
+      this.rim.intensity = lerp(1.4, 2.1, storyLighting);
+      this.lowerFill.intensity = lerp(8, 14, storyLighting);
+      this.storyKey.intensity = 0.45 * storyLighting;
+      this.storyFill.intensity = 0.28 * storyLighting;
+      this.storyRim.intensity = 0.4 * storyLighting;
+    } else {
+      this.key.intensity = lerp(82, this.isMobile ? 120 : 220, storyLighting);
+      this.fill.intensity = lerp(25, this.isMobile ? 48 : 90, storyLighting);
+      this.rim.intensity = lerp(58, this.isMobile ? 105 : 180, storyLighting);
+      this.lowerFill.intensity = lerp(4.5, this.isMobile ? 12 : 25, storyLighting);
+      this.storyKey.intensity = (this.isMobile ? 0.5 : 1.4) * storyLighting;
+      this.storyFill.intensity = (this.isMobile ? 0.28 : 0.8) * storyLighting;
+      this.storyRim.intensity = (this.isMobile ? 0.46 : 1.2) * storyLighting;
+    }
 
     const poses = this._poseAt(this.storyProgress);
     const focusWeights = this._focusWeights(this.storyProgress);

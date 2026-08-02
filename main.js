@@ -63,8 +63,10 @@ function runPreloader() {
    --------------------------------------------------------- */
 function initSmoothScroll() {
   if (REDUCED_MOTION) return null;
+  // iPad Safari already has excellent native momentum scroll.
+  // Lenis syncTouch + story gesture locking is what made it feel sticky/slow.
+  if (isIPadDevice()) return null;
 
-  const ipad = isIPadDevice();
   const lenis = new Lenis({
     duration: 1.1,
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -72,9 +74,8 @@ function initSmoothScroll() {
     // Mobile touch must go through Lenis (story pin uses touch-action:none),
     // so exiting the logo beat feels like desktop smooth scroll into Proyectos.
     syncTouch: true,
-    // iPad has a much larger scroll surface; a heavier lerp feels sticky/slow.
-    syncTouchLerp: ipad ? 0.14 : 0.085,
-    touchMultiplier: ipad ? 1.4 : 1.15,
+    syncTouchLerp: 0.085,
+    touchMultiplier: 1.15,
     autoRaf: false,
     // Keep page Lenis from eating wheel/touch while a modal scrolls.
     prevent: (node) => Boolean(node.closest?.("#projectModal")),
@@ -243,6 +244,10 @@ function initNav() {
    Vanilla Canvas adaptation of the supplied React component.
    --------------------------------------------------------- */
 function initParticles() {
+  // On iPad the full-screen flow field competes with WebGL and kills scroll.
+  // Grain CSS still gives atmosphere; iPhone keeps the animated field.
+  if (isIPadDevice()) return;
+
   const canvas = document.getElementById("bgParticles");
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
@@ -273,8 +278,6 @@ function initParticles() {
 
   const getParticleCount = () => {
     if (REDUCED_MOTION) return 110;
-    // iPhone (~300) stays; iPad was getting 500 on a 2–3× larger canvas.
-    if (isIPadDevice()) return 110;
     if (window.innerWidth <= 600) return 300;
     if (window.innerWidth <= 1024) return 500;
     return 780;
@@ -358,10 +361,7 @@ function initParticles() {
   function initialize() {
     width = window.innerWidth;
     height = window.innerHeight;
-    dpr = Math.min(
-      window.devicePixelRatio || 1,
-      isIPadDevice() ? 1 : 1.75
-    );
+    dpr = Math.min(window.devicePixelRatio || 1, 1.75);
 
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -388,15 +388,6 @@ function initParticles() {
   }
 
   function animate() {
-    // iPad only: half the particle frame rate. iPhone keeps full rate.
-    if (isIPadDevice()) {
-      animate._skip = !animate._skip;
-      if (animate._skip) {
-        animationFrameId = requestAnimationFrame(animate);
-        return;
-      }
-    }
-
     // Smoothly follow pointer velocity, then decay when the pointer stops.
     flowMotion.pointerX += (flowMotion.pointerTargetX - flowMotion.pointerX) * 0.14;
     flowMotion.pointerY += (flowMotion.pointerTargetY - flowMotion.pointerY) * 0.14;
@@ -592,6 +583,24 @@ function initStoryScroll(logo, lenis) {
   if (REDUCED_MOTION) {
     logo?.setStoryProgress(1);
     panels.forEach((panel) => panel.classList.add("is-active"));
+    return;
+  }
+
+  // iPad: native momentum scroll + scrub only. No touch/wheel step locking.
+  if (isIPadDevice()) {
+    ScrollTrigger.create({
+      trigger: section,
+      start: "top top",
+      end: "bottom bottom",
+      ...(pin ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
+      scrub: 0.4,
+      onUpdate: (self) => {
+        const progress = self.progress;
+        logo?.setStoryProgress(progress);
+        activatePanel(panelForProgress(progress));
+        heroMeta?.classList.toggle("is-hidden", progress > 0.075);
+      },
+    });
     return;
   }
 
@@ -1395,6 +1404,8 @@ function initLeadForm() {
    Boot
    --------------------------------------------------------- */
 (async function boot() {
+  if (isIPadDevice()) body.classList.add("is-ipad");
+
   await runPreloader();
 
   const lenis = initSmoothScroll();
