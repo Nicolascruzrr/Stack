@@ -20,7 +20,7 @@ function smoothstep(edge0, edge1, x) {
   return t * t * (3 - 2 * t);
 }
 
-function createRoundedBoxGeometry(width, height, depth, radius = 0.055, lite = false) {
+function createRoundedBoxGeometry(width, height, depth, radius = 0.055) {
   const shape = new THREE.Shape();
   const x = -width / 2;
   const y = -height / 2;
@@ -38,10 +38,10 @@ function createRoundedBoxGeometry(width, height, depth, radius = 0.055, lite = f
   const geometry = new THREE.ExtrudeGeometry(shape, {
     depth: depth - 0.04,
     bevelEnabled: true,
-    bevelSegments: lite ? 1 : 4,
+    bevelSegments: 4,
     bevelSize: 0.02,
     bevelThickness: 0.02,
-    curveSegments: lite ? 4 : 8,
+    curveSegments: 8,
     steps: 1,
   });
   geometry.center();
@@ -70,24 +70,14 @@ function drawTrackedText(ctx, text, centerX, baselineY, tracking) {
   });
 }
 
-function createEngravingTexture(text, index, lite = false) {
+function createEngravingTexture(text, index) {
   const canvas = document.createElement("canvas");
-  canvas.width = lite ? 1024 : 2048;
-  canvas.height = lite ? 160 : 320;
+  canvas.width = 2048;
+  canvas.height = 320;
   const ctx = canvas.getContext("2d");
   const longLine = index === 2;
-  const fontSize = lite
-    ? longLine
-      ? 28
-      : index === 1
-        ? 40
-        : 48
-    : longLine
-      ? 48
-      : index === 1
-        ? 68
-        : 82;
-  const tracking = longLine ? (lite ? 3 : 6) : lite ? 6 : 11;
+  const fontSize = longLine ? 48 : index === 1 ? 68 : 82;
+  const tracking = longLine ? 6 : 11;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgba(255,255,255,0.82)";
@@ -97,15 +87,15 @@ function createEngravingTexture(text, index, lite = false) {
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = lite ? 1 : 8;
+  texture.anisotropy = 8;
   texture.needsUpdate = true;
   return texture;
 }
 
-function createStudioEnvironment(renderer, lite = false) {
+function createStudioEnvironment(renderer) {
   const canvas = document.createElement("canvas");
-  canvas.width = lite ? 512 : 1024;
-  canvas.height = lite ? 256 : 512;
+  canvas.width = 1024;
+  canvas.height = 512;
   const ctx = canvas.getContext("2d");
 
   const background = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -125,43 +115,23 @@ function createStudioEnvironment(renderer, lite = false) {
   softbox.addColorStop(0.58, "rgba(255,255,255,0.1)");
   softbox.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = softbox;
-  ctx.fillRect(0, 34, canvas.width, lite ? 40 : 74);
-  ctx.fillRect(0, lite ? 200 : 404, canvas.width, lite ? 14 : 24);
+  ctx.fillRect(0, 34, canvas.width, 74);
+  ctx.fillRect(0, 404, canvas.width, 24);
 
   ctx.fillStyle = "rgba(210,225,236,0.7)";
-  ctx.fillRect(lite ? 40 : 86, lite ? 70 : 135, lite ? 10 : 18, lite ? 120 : 235);
+  ctx.fillRect(86, 135, 18, 235);
   ctx.fillStyle = "rgba(255,246,232,0.5)";
-  ctx.fillRect(lite ? 420 : 850, lite ? 80 : 158, lite ? 8 : 11, lite ? 90 : 185);
+  ctx.fillRect(850, 158, 11, 185);
 
   const source = new THREE.CanvasTexture(canvas);
   source.mapping = THREE.EquirectangularReflectionMapping;
   source.colorSpace = THREE.SRGBColorSpace;
-  try {
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    pmrem.compileEquirectangularShader();
-    const environment = pmrem.fromEquirectangular(source).texture;
-    source.dispose();
-    pmrem.dispose();
-    return environment;
-  } catch (err) {
-    console.warn("PMREM environment skipped:", err);
-    source.dispose();
-    return null;
-  }
-}
-
-function getRenderProfile() {
-  const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const narrow = window.innerWidth <= 1100;
-  const iPadOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const lite = coarse || narrow || iPadOS;
-  return {
-    lite,
-    maxPixelRatio: lite ? 1.25 : 1.85,
-    antialias: !lite,
-  };
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const environment = pmrem.fromEquirectangular(source).texture;
+  source.dispose();
+  pmrem.dispose();
+  return environment;
 }
 
 function mixPose(a, b, t) {
@@ -266,7 +236,6 @@ export class StackLogo3D {
     this.autoRotation = 0;
     this.isMobile = false;
     this.isTabletPortrait = false;
-    this.lite = false;
     this.barScale = 1;
     this.baseScale = 1;
 
@@ -279,45 +248,36 @@ export class StackLogo3D {
 
   _initScene() {
     const rect = this.wrap.getBoundingClientRect();
-    const profile = getRenderProfile();
-    this.lite = profile.lite;
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       alpha: true,
-      antialias: profile.antialias,
-      powerPreference: profile.lite ? "default" : "high-performance",
-      failIfMajorPerformanceCaveat: false,
+      antialias: true,
+      powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, profile.maxPixelRatio)
-    );
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.85));
     this.renderer.setSize(rect.width || 1, rect.height || 1, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
-    this.renderer.shadowMap.enabled = !profile.lite;
-    if (!profile.lite) {
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    }
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x000000, 9, 28);
-    this.environment = createStudioEnvironment(this.renderer, profile.lite);
-    if (this.environment) this.scene.environment = this.environment;
+    this.environment = createStudioEnvironment(this.renderer);
+    this.scene.environment = this.environment;
     this.camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
     this.camera.position.set(0, 0.35, 9.2);
 
-    this.scene.add(new THREE.HemisphereLight(0xe8eef2, 0x111315, profile.lite ? 0.85 : 0.58));
+    this.scene.add(new THREE.HemisphereLight(0xe8eef2, 0x111315, 0.58));
 
     this.key = new THREE.SpotLight(0xfffcf6, 82, 32, Math.PI / 5.5, 0.82, 1.35);
     this.key.position.set(3.8, 7.5, 5.2);
-    this.key.castShadow = !profile.lite;
-    if (!profile.lite) {
-      this.key.shadow.mapSize.set(1024, 1024);
-      this.key.shadow.bias = -0.00035;
-      this.key.shadow.normalBias = 0.025;
-    }
+    this.key.castShadow = true;
+    this.key.shadow.mapSize.set(1024, 1024);
+    this.key.shadow.bias = -0.00035;
+    this.key.shadow.normalBias = 0.025;
     this.key.target.position.set(0, 0, 0);
     this.scene.add(this.key, this.key.target);
 
@@ -331,7 +291,7 @@ export class StackLogo3D {
     this.rim.target.position.set(0, 0, 0);
     this.scene.add(this.rim, this.rim.target);
 
-    this.lowerFill = new THREE.PointLight(0xaebcc5, profile.lite ? 8 : 4.5, 12, 2);
+    this.lowerFill = new THREE.PointLight(0xaebcc5, 4.5, 12, 2);
     this.lowerFill.position.set(0, -3.5, 3);
     this.scene.add(this.lowerFill);
 
@@ -355,88 +315,50 @@ export class StackLogo3D {
     const barWidth = 2.7;
     const barHeight = 0.52;
     const barDepth = 0.85;
-    const barGeo = createRoundedBoxGeometry(
-      barWidth,
-      barHeight,
-      barDepth,
-      0.055,
-      profile.lite
-    );
+    const barGeo = createRoundedBoxGeometry(barWidth, barHeight, barDepth);
 
     this.bars = HOME.map((pose, index) => {
-      const material = profile.lite
-        ? new THREE.MeshStandardMaterial({
-            color: 0xbfc4c7,
-            emissive: 0x111315,
-            emissiveIntensity: 0.05,
-            metalness: 0.92,
-            roughness: 0.32,
-            envMapIntensity: 1.35,
-            transparent: true,
-            opacity: 1,
-          })
-        : new THREE.MeshPhysicalMaterial({
-            color: 0xbfc4c7,
-            emissive: 0x111315,
-            emissiveIntensity: 0.03,
-            metalness: 0.96,
-            roughness: 0.29,
-            anisotropy: 0.72,
-            anisotropyRotation: Math.PI / 2,
-            clearcoat: 0.12,
-            clearcoatRoughness: 0.38,
-            envMapIntensity: 1.65,
-            transparent: true,
-            opacity: 1,
-          });
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0xbfc4c7,
+        emissive: 0x111315,
+        emissiveIntensity: 0.03,
+        metalness: 0.96,
+        roughness: 0.29,
+        anisotropy: 0.72,
+        anisotropyRotation: Math.PI / 2,
+        clearcoat: 0.12,
+        clearcoatRoughness: 0.38,
+        envMapIntensity: 1.65,
+        transparent: true,
+        opacity: 1,
+      });
       const mesh = new THREE.Mesh(barGeo, material);
       mesh.position.set(pose.x, pose.y, pose.z);
-      mesh.castShadow = !profile.lite;
-      mesh.receiveShadow = !profile.lite;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
 
       const inscriptions = [
         "STACK",
         "WEB AGENCY",
         "SANTO DOMINGO • DOMINICAN REPUBLIC",
       ];
-      const engravingTexture = createEngravingTexture(
-        inscriptions[index],
-        index,
-        profile.lite
-      );
-      const engravingMaterial = profile.lite
-        ? new THREE.MeshStandardMaterial({
-            color: 0x0b0c0d,
-            emissive: 0xffffff,
-            emissiveIntensity: 0,
-            map: engravingTexture,
-            alphaMap: engravingTexture,
-            metalness: 0.78,
-            roughness: 0.5,
-            transparent: true,
-            opacity: index === 2 ? 0.68 : 0.74,
-            depthWrite: false,
-            polygonOffset: true,
-            polygonOffsetFactor: -2,
-            envMapIntensity: 0.45,
-            toneMapped: false,
-          })
-        : new THREE.MeshPhysicalMaterial({
-            color: 0x0b0c0d,
-            emissive: 0xffffff,
-            emissiveIntensity: 0,
-            map: engravingTexture,
-            alphaMap: engravingTexture,
-            metalness: 0.78,
-            roughness: 0.5,
-            transparent: true,
-            opacity: index === 2 ? 0.68 : 0.74,
-            depthWrite: false,
-            polygonOffset: true,
-            polygonOffsetFactor: -2,
-            envMapIntensity: 0.45,
-            toneMapped: false,
-          });
+      const engravingTexture = createEngravingTexture(inscriptions[index], index);
+      const engravingMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0x0b0c0d,
+        emissive: 0xffffff,
+        emissiveIntensity: 0,
+        map: engravingTexture,
+        alphaMap: engravingTexture,
+        metalness: 0.78,
+        roughness: 0.5,
+        transparent: true,
+        opacity: index === 2 ? 0.68 : 0.74,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        envMapIntensity: 0.45,
+        toneMapped: false,
+      });
       const engravingGeometry = new THREE.PlaneGeometry(
         barWidth * 0.82,
         barHeight * 0.58
@@ -757,10 +679,7 @@ export class StackLogo3D {
     this.camera.aspect = rect.width / rect.height;
     this.camera.updateProjectionMatrix();
     this.renderer.setPixelRatio(
-      Math.min(
-        window.devicePixelRatio || 1,
-        this.lite ? 1.25 : mobile ? 1.5 : 1.85
-      )
+      Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.85)
     );
     this.renderer.setSize(rect.width, rect.height, false);
     this.bars?.forEach(({ mesh, engraving, rearEngraving }) => {
@@ -1008,21 +927,6 @@ export class StackLogo3D {
 export function initStoryLogo() {
   const canvas = document.getElementById("storyCanvas");
   if (!canvas) return null;
-
-  try {
-    const probe = document.createElement("canvas");
-    const gl =
-      probe.getContext("webgl2", { failIfMajorPerformanceCaveat: false }) ||
-      probe.getContext("webgl", { failIfMajorPerformanceCaveat: false });
-    if (!gl) {
-      console.warn("WebGL unavailable — story logo skipped.");
-      return null;
-    }
-  } catch (err) {
-    console.warn("WebGL probe failed:", err);
-    return null;
-  }
-
   try {
     return new StackLogo3D(canvas);
   } catch (err) {
