@@ -18,10 +18,6 @@ function isIPadDevice() {
 
 if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
-  if (isIPadDevice()) {
-    // Stop Safari chrome show/hide from constantly refreshing pins (scroll jumps).
-    ScrollTrigger.config({ ignoreMobileResize: true });
-  }
 }
 
 /* ---------------------------------------------------------
@@ -88,18 +84,21 @@ function runPreloader() {
    --------------------------------------------------------- */
 function initSmoothScroll() {
   if (REDUCED_MOTION) return null;
-  // iPad: native scroll only. Lenis syncTouch + pinned GSAP sections fight and
-  // make Proyectos feel like the page scrolls on its own.
+  // iPad Safari already has excellent native momentum scroll.
+  // Lenis syncTouch + story gesture locking is what made it feel sticky/slow.
   if (isIPadDevice()) return null;
 
   const lenis = new Lenis({
     duration: 1.1,
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     smoothWheel: true,
+    // Mobile touch must go through Lenis (story pin uses touch-action:none),
+    // so exiting the logo beat feels like desktop smooth scroll into Proyectos.
     syncTouch: true,
     syncTouchLerp: 0.085,
     touchMultiplier: 1.15,
     autoRaf: false,
+    // Keep page Lenis from eating wheel/touch while a modal scrolls.
     prevent: (node) => Boolean(node.closest?.("#projectModal")),
   });
 
@@ -640,7 +639,8 @@ function initStoryScroll(logo, lenis) {
 
     if (lenis) {
       lenis.scrollTo(destination, {
-        duration: isIPadDevice() ? 1.45 : 1.15,
+        // Same easing/duration as desktop so mobile story beats feel identical.
+        duration: 1.15,
         easing: (t) => 1 - Math.pow(1 - t, 4),
         lock: true,
         force: true,
@@ -650,7 +650,7 @@ function initStoryScroll(logo, lenis) {
       window.scrollTo({ top: destination, behavior: "smooth" });
       // Native smooth scroll has no completion callback — unlock after settle.
       window.clearTimeout(releaseTimer);
-      releaseTimer = window.setTimeout(releaseStep, isIPadDevice() ? 1200 : 950);
+      releaseTimer = window.setTimeout(releaseStep, 950);
     }
     return true;
   };
@@ -660,32 +660,6 @@ function initStoryScroll(logo, lenis) {
     const step = closestStep(progress);
     const nextStep = clampValue(step + direction, 0, checkpoints.length - 1);
     return nextStep !== step;
-  };
-
-  // iPad has no Lenis and story uses touch-action:none, so native pan cannot
-  // leave the sticky pin — scroll past into Proyectos (or back up) ourselves.
-  const scrollPastStory = (direction) => {
-    const { start } = getBounds();
-    const destination =
-      direction > 0
-        ? section.offsetTop + section.offsetHeight
-        : Math.max(0, start - Math.round(viewportHeight() * 0.2));
-    isStepping = true;
-    releaseTimer = window.setTimeout(releaseStep, 1600);
-    if (lenis) {
-      lenis.scrollTo(destination, {
-        duration: isIPadDevice() ? 1.5 : 0.95,
-        easing: (t) => 1 - Math.pow(1 - t, 4),
-        lock: true,
-        force: true,
-        onComplete: releaseStep,
-      });
-    } else {
-      // Instant jump past the pin — smooth scroll here fights native iPad inertia.
-      window.scrollTo({ top: destination, behavior: "auto" });
-      window.clearTimeout(releaseTimer);
-      releaseTimer = window.setTimeout(releaseStep, 50);
-    }
   };
 
   window.addEventListener(
@@ -698,19 +672,10 @@ function initStoryScroll(logo, lenis) {
       if (!direction || Math.abs(event.deltaY) < 6) return;
       if (scrollY < start - 2 || scrollY > end + 2) return;
       if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) {
-        if (!lenis && !isStepping) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          scrollPastStory(direction);
-        }
+        // Edge: let normal scroll continue (desktop Lenis / iPad native).
         return;
       }
       if (!canStepInDirection(scrollY, direction, start, distance)) {
-        if (!lenis && !isStepping) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          scrollPastStory(direction);
-        }
         return;
       }
 
@@ -740,17 +705,9 @@ function initStoryScroll(logo, lenis) {
       const scrollY = getScrollY();
       if (scrollY < start - 2 || scrollY > end + 2) return;
       if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) {
-        if (!lenis && !isStepping) {
-          event.preventDefault();
-          scrollPastStory(direction);
-        }
         return;
       }
       if (!canStepInDirection(scrollY, direction, start, distance)) {
-        if (!lenis && !isStepping) {
-          event.preventDefault();
-          scrollPastStory(direction);
-        }
         return;
       }
 
@@ -799,15 +756,9 @@ function initStoryScroll(logo, lenis) {
         (direction < 0 && atStart) || (direction > 0 && atEnd);
       const hasStep = canStepInDirection(scrollY, direction, start, distance);
 
-      // Lenis owns the exit on phone/desktop. On iPad (no Lenis) drive it.
+      // At the story edge: release like desktop (continuous scroll into Proyectos).
+      // A programmatic jump feels like changing HTML pages on iPad.
       if (leavingStory || !hasStep) {
-        if (lenis) return;
-        if (Math.abs(delta) < 40) return;
-        if (gestureConsumed || isStepping) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        gestureConsumed = true;
-        scrollPastStory(direction);
         return;
       }
 
@@ -847,17 +798,24 @@ function initStoryScroll(logo, lenis) {
     trigger: section,
     start: "top top",
     end: "bottom bottom",
-    // iPad keeps CSS sticky (lighter / more stable than a second GSAP pin).
-    ...(pin && !isIPadDevice()
-      ? { pin, pinSpacing: false, anticipatePin: 1 }
-      : {}),
-    scrub: isIPadDevice() ? true : 0.75,
+    // iPad keeps CSS sticky (lighter); phone/desktop pin via ScrollTrigger.
+    ...(pin && !isIPadDevice() ? { pin, pinSpacing: false, anticipatePin: 1 } : {}),
+    scrub: isIPadDevice() ? 0.35 : 0.75,
     onUpdate: (self) => {
       const progress = self.progress;
       logo?.setStoryProgress(progress);
       activatePanel(panelForProgress(progress));
       heroMeta?.classList.toggle("is-hidden", progress > 0.075);
       if (!isStepping) activeStep = closestStep(progress);
+
+      // iPad: free native pan at the edges so exit into Proyectos is continuous scroll.
+      if (isIPadDevice() && pin) {
+        const atEdge = progress >= 0.9 || progress <= 0.08;
+        const action = atEdge ? "pan-y" : "none";
+        pin.style.touchAction = action;
+        const wrap = document.getElementById("storyCanvasWrap");
+        if (wrap) wrap.style.touchAction = action;
+      }
     },
   });
 }
@@ -870,8 +828,7 @@ function initWork() {
   const pin = document.getElementById("workPin");
   const track = document.getElementById("workTrack");
   if (!section || !pin || !track || REDUCED_MOTION) return;
-  // iPad: pinned scrub fights Safari touch and makes the whole page jump.
-  // Native horizontal swipe stays stable; desktop keeps the vertical→horizontal scrub.
+  // iPad: native horizontal swipe instead of a pinned GSAP scrub.
   if (isIPadDevice()) return;
 
   const media = gsap.matchMedia();
@@ -883,15 +840,13 @@ function initWork() {
       scrollTrigger: {
         trigger: section,
         start: "top top",
-        end: () => `+=${Math.max(distance(), 1)}`,
+        end: () => `+=${distance()}`,
         pin,
         scrub: 1,
         anticipatePin: 1,
         invalidateOnRefresh: true,
       },
     });
-
-    requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => {
       tween.scrollTrigger?.kill();
@@ -1510,29 +1465,29 @@ function initLeadForm() {
 
   initLeadForm();
 
-  const refreshLayout = ({ logo = true } = {}) => {
+  const refreshLayout = () => {
     try {
-      if (logo) storyLogo?.resize();
+      storyLogo?.resize();
     } catch (_) {
       /* ignore */
     }
     if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
   };
 
-  requestAnimationFrame(() => refreshLayout());
-  window.addEventListener("load", () => refreshLayout());
+  requestAnimationFrame(refreshLayout);
+  window.addEventListener("load", refreshLayout);
   window.addEventListener("orientationchange", () => {
-    window.setTimeout(() => refreshLayout(), 250);
+    window.setTimeout(refreshLayout, 250);
   });
 
   const vv = window.visualViewport;
   if (vv) {
     let vvTimer = 0;
-    // Never refresh pins on iPad visualViewport scroll — that repositions the page mid-gesture.
-    vv.addEventListener("resize", () => {
-      if (isIPadDevice()) return;
+    const onViewportChange = () => {
       window.clearTimeout(vvTimer);
-      vvTimer = window.setTimeout(() => refreshLayout({ logo: true }), 180);
-    });
+      vvTimer = window.setTimeout(refreshLayout, 120);
+    };
+    vv.addEventListener("resize", onViewportChange);
+    vv.addEventListener("scroll", onViewportChange);
   }
 })();
