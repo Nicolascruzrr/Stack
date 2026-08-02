@@ -662,6 +662,31 @@ function initStoryScroll(logo, lenis) {
     return nextStep !== step;
   };
 
+  // iPad has no Lenis and story uses touch-action:none, so native pan cannot
+  // leave the sticky pin — scroll past into Proyectos (or back up) ourselves.
+  const scrollPastStory = (direction) => {
+    const { start } = getBounds();
+    const destination =
+      direction > 0
+        ? section.offsetTop + section.offsetHeight
+        : Math.max(0, start - Math.round(viewportHeight() * 0.2));
+    isStepping = true;
+    releaseTimer = window.setTimeout(releaseStep, 1600);
+    if (lenis) {
+      lenis.scrollTo(destination, {
+        duration: 0.95,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+        lock: true,
+        force: true,
+        onComplete: releaseStep,
+      });
+    } else {
+      window.scrollTo({ top: destination, behavior: "smooth" });
+      window.clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(releaseStep, 1000);
+    }
+  };
+
   window.addEventListener(
     "wheel",
     (event) => {
@@ -671,9 +696,22 @@ function initStoryScroll(logo, lenis) {
       const direction = Math.sign(event.deltaY);
       if (!direction || Math.abs(event.deltaY) < 6) return;
       if (scrollY < start - 2 || scrollY > end + 2) return;
-      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
-      // Last/first beat: release to Lenis for the same smooth exit as desktop.
-      if (!canStepInDirection(scrollY, direction, start, distance)) return;
+      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          scrollPastStory(direction);
+        }
+        return;
+      }
+      if (!canStepInDirection(scrollY, direction, start, distance)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          scrollPastStory(direction);
+        }
+        return;
+      }
 
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -700,8 +738,20 @@ function initStoryScroll(logo, lenis) {
       const { start, end, distance } = getBounds();
       const scrollY = getScrollY();
       if (scrollY < start - 2 || scrollY > end + 2) return;
-      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) return;
-      if (!canStepInDirection(scrollY, direction, start, distance)) return;
+      if ((direction < 0 && scrollY <= start + 2) || (direction > 0 && scrollY >= end - 2)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          scrollPastStory(direction);
+        }
+        return;
+      }
+      if (!canStepInDirection(scrollY, direction, start, distance)) {
+        if (!lenis && !isStepping) {
+          event.preventDefault();
+          scrollPastStory(direction);
+        }
+        return;
+      }
 
       event.preventDefault();
       if (!isStepping) moveOneStep(direction);
@@ -748,9 +798,17 @@ function initStoryScroll(logo, lenis) {
         (direction < 0 && atStart) || (direction > 0 && atEnd);
       const hasStep = canStepInDirection(scrollY, direction, start, distance);
 
-      // Same as desktop: at the story edge, let Lenis own the smooth scroll
-      // toward Proyectos (or back to the top) instead of trapping the gesture.
-      if (leavingStory || !hasStep) return;
+      // Lenis owns the exit on phone/desktop. On iPad (no Lenis) drive it.
+      if (leavingStory || !hasStep) {
+        if (lenis) return;
+        if (Math.abs(delta) < 40) return;
+        if (gestureConsumed || isStepping) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        gestureConsumed = true;
+        scrollPastStory(direction);
+        return;
+      }
 
       // Only lock the gesture once the swipe is clearly intentional.
       if (Math.abs(delta) < 32) return;
