@@ -434,25 +434,9 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js"
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js"
   }
 }
-</script>
-<!-- Failsafe: if modules never boot (common on some iPad Safari builds),
-     still dismiss the loading mark so the page is usable. -->
-<script>
-(function () {
-  var MAX_MS = 6500;
-  window.setTimeout(function () {
-    var el = document.getElementById("preloader");
-    if (!el || el.getAttribute("data-done") === "1") return;
-    el.setAttribute("data-done", "1");
-    el.classList.add("is-hidden");
-    window.setTimeout(function () {
-      if (el && el.parentNode) el.parentNode.removeChild(el);
-    }, 500);
-  }, MAX_MS);
-})();
 </script>
 <script type="module" src="main.js"></script>
 </body>

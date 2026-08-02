@@ -3,46 +3,21 @@
    Lenis + GSAP ScrollTrigger orchestration, story logo,
    particles, reveals, mobile nav.
    ============================================================ */
+import { initStoryLogo } from "./logo3d.js";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const body = document.body;
 const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
 
-if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
+gsap.registerPlugin(ScrollTrigger);
 
 /* ---------------------------------------------------------
    Preloader
    --------------------------------------------------------- */
-function dismissPreloaderElement(preloader) {
-  if (!preloader || preloader.dataset.done === "1") return;
-  preloader.dataset.done = "1";
-  preloader.classList.add("is-hidden");
-  window.setTimeout(() => preloader.remove(), REDUCED_MOTION ? 150 : 700);
-}
-
 function runPreloader() {
   return new Promise((resolve) => {
     const preloader = document.getElementById("preloader");
     const timeout = (ms) => new Promise((res) => setTimeout(res, ms));
-    let settled = false;
-
-    const done = () => {
-      if (settled) return;
-      settled = true;
-      dismissPreloaderElement(preloader);
-      resolve();
-    };
-
-    // Hard ceiling so iPad Safari never stays on the mark forever
-    // if fonts/modules hang after the module finally starts.
-    timeout(5000).then(done);
-
-    if (!preloader) {
-      done();
-      return;
-    }
 
     // Only gate on critical above-the-fold assets; lazy-loaded imagery
     // further down the page should not hold up first paint.
@@ -55,21 +30,24 @@ function runPreloader() {
             img.addEventListener("error", res, { once: true });
           })
     );
-    const fontsReady = document.fonts
-      ? Promise.race([document.fonts.ready.catch(() => {}), timeout(2000)])
-      : Promise.resolve();
-    const assetsReady = Promise.race([
-      Promise.all([...imgPromises, fontsReady]),
-      timeout(3000),
-    ]);
+    const fontsReady = document.fonts ? document.fonts.ready.catch(() => {}) : Promise.resolve();
+    const assetsReady = Promise.race([Promise.all([...imgPromises, fontsReady]), timeout(4000)]);
+
+    function finish() {
+      preloader.classList.add("is-hidden");
+      setTimeout(() => {
+        preloader.remove();
+        resolve();
+      }, REDUCED_MOTION ? 150 : 700);
+    }
 
     if (REDUCED_MOTION) {
-      assetsReady.then(done);
+      assetsReady.then(finish);
       return;
     }
 
-    Promise.all([assetsReady, timeout(900)]).then(() => {
-      window.setTimeout(done, 200);
+    Promise.all([assetsReady, timeout(1200)]).then(() => {
+      setTimeout(finish, 260);
     });
   });
 }
@@ -1397,31 +1375,22 @@ function initLeadForm() {
 (async function boot() {
   await runPreloader();
 
-  const lenis = typeof Lenis !== "undefined" ? initSmoothScroll() : null;
+  const lenis = initSmoothScroll();
 
   let storyLogo = null;
   try {
-    // Dynamic import so a Three.js / iPad WebGL failure cannot block boot
-    // (a static import would prevent runPreloader from ever running).
-    const { initStoryLogo } = await import("./logo3d.js");
     storyLogo = initStoryLogo();
   } catch (err) {
     console.error("Story logo failed to init:", err);
   }
 
-  if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
-    initNav();
-    initAnchorScroll(lenis);
-    initParticles();
-    initReveals();
-    initStoryScroll(storyLogo, lenis);
-    initWork();
-    initProjectModal(lenis);
-  } else {
-    console.error("GSAP/ScrollTrigger unavailable — core UI only.");
-    body.classList.add("js-ready");
-  }
-
+  initNav();
+  initAnchorScroll(lenis);
+  initParticles();
+  initReveals();
+  initStoryScroll(storyLogo, lenis);
+  initWork();
+  initProjectModal(lenis);
   initLeadForm();
 
   const refreshLayout = () => {
@@ -1430,7 +1399,7 @@ function initLeadForm() {
     } catch (_) {
       /* ignore */
     }
-    if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+    ScrollTrigger.refresh();
   };
 
   requestAnimationFrame(refreshLayout);
