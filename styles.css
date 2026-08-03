@@ -523,6 +523,7 @@ section{position:relative;z-index:var(--z-content);}
 }
 .story__meta.is-hidden{
   opacity:0;
+  visibility:hidden;
   transform:translateY(12px);
 }
 
@@ -1218,6 +1219,12 @@ section{position:relative;z-index:var(--z-content);}
   .story__panel.is-active{transform:translateY(0);}
   .story__title{font-size:clamp(2.2rem,10vw,3.4rem);}
   .story__meta{bottom:1.25rem;width:100%;}
+  /* Same as other iPhones: meta only on the empty hero beat, never under the CTA. */
+  .story__stage:has(.story__panel.is-active) .story__meta{
+    opacity:0 !important;
+    visibility:hidden !important;
+    transform:translateY(12px);
+  }
   .story__meta.meta__grid{
     width:calc(100% - var(--edge));
     padding-left:var(--edge);
@@ -1303,31 +1310,18 @@ section{position:relative;z-index:var(--z-content);}
     visibility:visible;
     transform:none;
     margin:0;
-    padding:calc(var(--nav-h) + 1.25rem) var(--edge) 3.5rem;
+    padding:calc(var(--nav-h) + 1.25rem) var(--edge) max(3rem, calc(2.25rem + env(safe-area-inset-bottom, 0px)));
     justify-content:flex-end;
     box-sizing:border-box;
+    gap:.85rem;
   }
   .story__panel.is-active{transform:none;}
   .story__panel[data-panel="goals"],
   .story__panel[data-panel="contact"]{
     background:var(--black);
   }
-  .story__meta{
-    position:absolute;
-    left:0;
-    right:0;
-    top:calc(100vh - 5.5rem);
-    top:calc(100svh - 5.5rem);
-    top:calc(100dvh - 5.5rem);
-    bottom:auto;
-    width:100%;
-    padding:0;
-    z-index:3;
-  }
-  .story__meta.meta__grid{
-    width:100%;
-    padding-left:var(--edge);
-  }
+  /* Match normal iPhone hero: copy + CTA at bottom, no meta strip under the button. */
+  .story__meta{display:none !important;}
   .work{padding:6rem 0 3rem;}
   .work__pin{min-height:auto;padding:0;overflow:visible;}
   .work__viewport{

@@ -601,7 +601,9 @@ function initStoryScroll(logo, lenis) {
   activatePanel(REDUCED_MOTION ? "about" : null);
 
   if (REDUCED_MOTION) {
-    logo?.setStoryProgress(1);
+    // About beat on mobile — same composition as other iPhones (logo + copy, no meta).
+    logo?.setStoryProgress(0.27);
+    heroMeta?.classList.add("is-hidden");
     panels.forEach((panel) => panel.classList.add("is-active"));
     return;
   }
