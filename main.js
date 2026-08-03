@@ -16,6 +16,14 @@ function isIPadDevice() {
   return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
 }
 
+/** Stable viewport height for story pin on tall iPhones (dvh can lie in Safari). */
+function syncStoryViewportHeight() {
+  const h = Math.round(window.visualViewport?.height || window.innerHeight || 0);
+  if (h > 0) {
+    document.documentElement.style.setProperty("--story-vvh", `${h}px`);
+  }
+}
+
 if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
@@ -1428,6 +1436,7 @@ function initLeadForm() {
    --------------------------------------------------------- */
 (async function boot() {
   if (isIPadDevice()) body.classList.add("is-ipad");
+  syncStoryViewportHeight();
 
   await runPreloader();
 
@@ -1466,6 +1475,7 @@ function initLeadForm() {
   initLeadForm();
 
   const refreshLayout = () => {
+    syncStoryViewportHeight();
     try {
       storyLogo?.resize();
     } catch (_) {
@@ -1474,6 +1484,7 @@ function initLeadForm() {
     if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
   };
 
+  syncStoryViewportHeight();
   requestAnimationFrame(refreshLayout);
   window.addEventListener("load", refreshLayout);
   window.addEventListener("orientationchange", () => {
