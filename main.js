@@ -872,13 +872,13 @@ const PROJECTS = [
     title: "Sharon Nicole",
     client: "Sharon Nicole",
     overview:
-      "Consultora de sueÃ±o infantil. Cursos y videollamadas para mejorar el descanso de bebÃ©s y niÃ±os: rutinas, noches completas y acompaÃ±amiento respetuoso.",
+      "Consultora de sueño infantil. Cursos y videollamadas para mejorar el descanso de bebés y niños: rutinas, noches completas y acompañamiento respetuoso.",
     url: "https://sharonnicole.com",
     hero: { src: "img/sharon-cover.png", alt: "Sitio web de Sharon Nicole" },
     gallery: [
-      { src: "img/sharon-gallery-01.jpg", alt: "SecciÃ³n La realidad del sitio de Sharon Nicole", size: "full" },
-      { src: "img/sharon-gallery-02.jpg", alt: "Mensaje sobre el sueÃ±o infantil en el sitio de Sharon Nicole", size: "full" },
-      { src: "img/sharon-gallery-03.jpg", alt: "Cursos y asesorÃ­as de Sharon Nicole", size: "full" },
+      { src: "img/sharon-gallery-01.jpg", alt: "Sección La realidad del sitio de Sharon Nicole", size: "full" },
+      { src: "img/sharon-gallery-02.jpg", alt: "Mensaje sobre el sueño infantil en el sitio de Sharon Nicole", size: "full" },
+      { src: "img/sharon-gallery-03.jpg", alt: "Cursos y asesorías de Sharon Nicole", size: "full" },
     ],
   },
   {
@@ -888,7 +888,7 @@ const PROJECTS = [
     title: "Caribbean Buildings Construction",
     client: "Caribbean Buildings Construction",
     overview:
-      "Empresa dedicada al diseÃ±o y construcciÃ³n de modernas y lujosas torres residenciales en la RepÃºblica Dominicana.",
+      "Empresa dedicada al diseño y construcción de modernas y lujosas torres residenciales en la República Dominicana.",
     url: "https://caribbeanbuildingsc.com",
     hero: {
       src: "img/caribbean-cover.jpg",
@@ -897,7 +897,7 @@ const PROJECTS = [
     gallery: [
       {
         src: "img/caribbean-gallery-01.jpg",
-        alt: "Cita del sitio: Hacemos realidad grandes visiones arquitectÃ³nicas",
+        alt: "Cita del sitio: Hacemos realidad grandes visiones arquitectónicas",
         size: "full",
       },
       {
@@ -907,7 +907,7 @@ const PROJECTS = [
       },
       {
         src: "img/caribbean-gallery-03.jpg",
-        alt: "SecciÃ³n QuÃ© hacemos del sitio de Caribbean Buildings",
+        alt: "Sección Qué hacemos del sitio de Caribbean Buildings",
         size: "full",
       },
       {
@@ -924,13 +924,13 @@ const PROJECTS = [
     title: "Abejitas Veterinaria",
     client: "Abejitas Veterinaria",
     overview:
-      "Veterinaria en Santo Domingo. Consultas, vacunas, cirugÃ­a, laboratorio y hotel para mascotas.",
+      "Veterinaria en Santo Domingo. Consultas, vacunas, cirugía, laboratorio y hotel para mascotas.",
     url: "https://abejitasvet.com/",
     hero: { src: "img/abejitas-cover.jpg", alt: "Sitio web de Abejitas Veterinaria presentado en una laptop" },
     gallery: [
-      { src: "img/abejitas-gallery-01.jpg", alt: "SecciÃ³n Por quÃ© elegirnos de Abejitas Veterinaria", size: "full" },
+      { src: "img/abejitas-gallery-01.jpg", alt: "Sección Por qué elegirnos de Abejitas Veterinaria", size: "full" },
       { src: "img/abejitas-gallery-02.jpg", alt: "Servicios de Abejitas Veterinaria", size: "full" },
-      { src: "img/abejitas-gallery-03.jpg", alt: "GuÃ­a digital de Abejitas Veterinaria", size: "full" },
+      { src: "img/abejitas-gallery-03.jpg", alt: "Guía digital de Abejitas Veterinaria", size: "full" },
     ],
   },
 ];
