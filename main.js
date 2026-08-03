@@ -105,9 +105,9 @@ function initSmoothScroll() {
     syncTouchLerp: 0.085,
     touchMultiplier: 1.15,
     autoRaf: false,
-    // Nested scrollers Lenis must not steal (modal + mobile project carousel).
-    prevent: (node) =>
-      Boolean(node.closest?.("#projectModal, .work__viewport, .pm__scroll")),
+    // Nested modal scrollers Lenis must not steal.
+    // Do NOT prevent .work__viewport — that blocked vertical page scroll on project images.
+    prevent: (node) => Boolean(node.closest?.("#projectModal, .pm__scroll")),
   });
 
   lenis.on("scroll", ScrollTrigger.update);
@@ -826,7 +826,10 @@ function initWork() {
   const track = document.getElementById("workTrack");
   if (!section || !pin || !track) return;
   // Phones + iPad: native horizontal carousel (GSAP pin traps scroll on iPhone 16).
-  if (isIPadDevice()) return;
+  if (isIPadDevice()) {
+    initMobileWorkSwipe();
+    return;
+  }
 
   const media = gsap.matchMedia();
   media.add("(min-width: 1101px)", () => {
@@ -851,6 +854,81 @@ function initWork() {
       gsap.set(track, { clearProps: "transform" });
     };
   });
+
+  // Phone carousel: horizontal swipe between cards, vertical scroll keeps the page moving.
+  media.add("(max-width: 1100px)", () => {
+    initMobileWorkSwipe();
+    return () => {};
+  });
+}
+
+/** Horizontal project swipe that does not trap vertical page scroll on images. */
+function initMobileWorkSwipe() {
+  const viewport = document.querySelector("#work .work__viewport");
+  if (!viewport || viewport.dataset.swipeBound === "1") return;
+  viewport.dataset.swipeBound = "1";
+
+  let active = false;
+  let axis = null;
+  let lastX = 0;
+  let lastY = 0;
+  let moved = false;
+
+  viewport.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      active = true;
+      axis = null;
+      moved = false;
+      lastX = event.clientX;
+      lastY = event.clientY;
+    },
+    { passive: true }
+  );
+
+  viewport.addEventListener(
+    "pointermove",
+    (event) => {
+      if (!active) return;
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+
+      if (!axis) {
+        if (Math.hypot(dx, dy) < 10) return;
+        axis = Math.abs(dx) > Math.abs(dy) * 1.15 ? "x" : "y";
+      }
+
+      if (axis === "x") {
+        viewport.scrollLeft -= dx;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        moved = true;
+        event.preventDefault();
+      }
+      // Vertical: do not preventDefault — Lenis / native page scroll continues.
+    },
+    { passive: false }
+  );
+
+  const end = () => {
+    active = false;
+    axis = null;
+  };
+  viewport.addEventListener("pointerup", end, { passive: true });
+  viewport.addEventListener("pointercancel", end, { passive: true });
+
+  // Avoid accidental card opens after a horizontal swipe.
+  viewport.addEventListener(
+    "click",
+    (event) => {
+      if (!moved) return;
+      event.preventDefault();
+      event.stopPropagation();
+      moved = false;
+    },
+    true
+  );
 }
 
 /* ---------------------------------------------------------

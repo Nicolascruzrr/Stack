@@ -1202,7 +1202,7 @@ section{position:relative;z-index:var(--z-content);}
     -webkit-overflow-scrolling:touch;
     overscroll-behavior-inline:contain;
     scrollbar-width:none;
-    touch-action:pan-x;
+    touch-action:pan-y;
   }
   .work__viewport::-webkit-scrollbar{display:none;}
   .work__track{
@@ -1286,6 +1286,7 @@ body.is-ipad .work__viewport{
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-inline:contain;
   scrollbar-width:none;
+  touch-action:pan-y;
 }
 body.is-ipad .work__viewport::-webkit-scrollbar{display:none;}
 body.is-ipad .work__track{
