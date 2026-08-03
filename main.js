@@ -17,11 +17,17 @@ function isIPadDevice() {
 }
 
 /** Stable viewport height for story pin on tall iPhones (dvh can lie in Safari). */
-function syncStoryViewportHeight() {
+function syncStoryViewportHeight({ force = false } = {}) {
   const h = Math.round(window.visualViewport?.height || window.innerHeight || 0);
-  if (h > 0) {
-    document.documentElement.style.setProperty("--story-vvh", `${h}px`);
-  }
+  if (h <= 0) return;
+  const prev = Number.parseInt(
+    document.documentElement.style.getPropertyValue("--story-vvh"),
+    10
+  );
+  // Ignore Safari URL-bar show/hide jitter — constant CSS height changes resize the
+  // WebGL canvas and make the 3D logo blink.
+  if (!force && Number.isFinite(prev) && Math.abs(prev - h) < 48) return;
+  document.documentElement.style.setProperty("--story-vvh", `${h}px`);
 }
 
 if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
@@ -1503,7 +1509,7 @@ function initLeadForm() {
    --------------------------------------------------------- */
 (async function boot() {
   if (isIPadDevice()) body.classList.add("is-ipad");
-  syncStoryViewportHeight();
+  syncStoryViewportHeight({ force: true });
 
   await runPreloader();
 
@@ -1516,11 +1522,9 @@ function initLeadForm() {
   try {
     const { initStoryLogo } = await import("./logo3d.js");
     storyLogo = initStoryLogo();
-    // Layout may still be settling after the preloader — force a sharp first frame.
     requestAnimationFrame(() => {
       storyLogo?.resize();
       storyLogo?.start();
-      requestAnimationFrame(() => storyLogo?.resize());
     });
   } catch (err) {
     console.error("Story logo failed to init:", err);
@@ -1541,31 +1545,48 @@ function initLeadForm() {
 
   initLeadForm();
 
-  const refreshLayout = () => {
-    syncStoryViewportHeight();
+  const refreshLogoSize = () => {
     try {
       storyLogo?.resize();
     } catch (_) {
       /* ignore */
     }
+  };
+
+  const refreshLayout = ({ resizeLogo = true, forceViewport = false } = {}) => {
+    syncStoryViewportHeight({ force: forceViewport });
+    if (resizeLogo) refreshLogoSize();
     if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
   };
 
-  syncStoryViewportHeight();
-  requestAnimationFrame(refreshLayout);
-  window.addEventListener("load", refreshLayout);
+  syncStoryViewportHeight({ force: true });
+  requestAnimationFrame(() => refreshLayout({ forceViewport: true }));
+  window.addEventListener("load", () => refreshLayout({ forceViewport: true }));
   window.addEventListener("orientationchange", () => {
-    window.setTimeout(refreshLayout, 250);
+    window.setTimeout(() => refreshLayout({ forceViewport: true }), 280);
   });
+  window.addEventListener(
+    "resize",
+    () => {
+      window.clearTimeout(window.__stackResizeTimer);
+      window.__stackResizeTimer = window.setTimeout(
+        () => refreshLayout({ forceViewport: true }),
+        180
+      );
+    },
+    { passive: true }
+  );
 
+  // visualViewport scroll/resize fires constantly on iPhone chrome — never resize WebGL here.
   const vv = window.visualViewport;
   if (vv) {
     let vvTimer = 0;
     const onViewportChange = () => {
       window.clearTimeout(vvTimer);
-      vvTimer = window.setTimeout(refreshLayout, 120);
+      vvTimer = window.setTimeout(() => {
+        syncStoryViewportHeight({ force: false });
+      }, 200);
     };
     vv.addEventListener("resize", onViewportChange);
-    vv.addEventListener("scroll", onViewportChange);
   }
 })();

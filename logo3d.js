@@ -616,14 +616,8 @@ export class StackLogo3D {
     this._io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          this.visible = entry.isIntersecting;
-          if (this.visible) {
-            // Do not resize here — Safari/iPad IO + pin churn was blanking the canvas.
-            this.start();
-          } else if (entry.intersectionRatio === 0 && entry.boundingClientRect.bottom < 0) {
-            // Only pause once the hero has scrolled fully away.
-            this.stop();
-          }
+          // Only toggle the flag — never stop/start the loop (that blanks a frame).
+          this.visible = entry.isIntersecting || entry.intersectionRatio > 0;
         });
       },
       { threshold: [0, 0.02], rootMargin: "20% 0px" }
@@ -800,8 +794,14 @@ export class StackLogo3D {
       window.devicePixelRatio || 1,
       ipad ? 1.5 : mobile ? 1.5 : 1.85
     );
-    // Avoid setSize/setPixelRatio when unchanged — those clear the buffer and flicker on iPad.
-    if (this._drawW !== drawW || this._drawH !== drawH || this._pixelRatio !== pixelRatio) {
+    // Ignore tiny Safari chrome / pin jitter — setSize clears the buffer and blinks.
+    const sizeChanged =
+      this._drawW == null ||
+      this._drawH == null ||
+      Math.abs(this._drawW - drawW) >= 12 ||
+      Math.abs(this._drawH - drawH) >= 12 ||
+      this._pixelRatio !== pixelRatio;
+    if (sizeChanged) {
       this._drawW = drawW;
       this._drawH = drawH;
       this._pixelRatio = pixelRatio;
@@ -1032,7 +1032,9 @@ export class StackLogo3D {
 
     this.group.scale.setScalar(this.baseScale);
 
-    this.renderer.render(this.scene, this.camera);
+    if (this.visible !== false) {
+      this.renderer.render(this.scene, this.camera);
+    }
     this._raf = requestAnimationFrame(() => this._tick());
   }
 
