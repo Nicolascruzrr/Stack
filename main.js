@@ -297,7 +297,8 @@ function initParticles() {
   const speed = 0.78;
 
   const getParticleCount = () => {
-    if (REDUCED_MOTION) return 110;
+    // Keep a visible field even when Reduce Motion is on (iPhone 16 often enables it).
+    if (REDUCED_MOTION) return window.innerWidth <= 1100 ? 240 : 140;
     if (window.innerWidth <= 600) return 300;
     if (window.innerWidth <= 1024) return 500;
     return 780;
@@ -598,15 +599,10 @@ function initStoryScroll(logo, lenis) {
   const viewportHeight = () =>
     Math.round(window.visualViewport?.height || window.innerHeight || 1);
 
-  activatePanel(REDUCED_MOTION ? "about" : null);
-
-  if (REDUCED_MOTION) {
-    // About beat on mobile — same composition as other iPhones (logo + copy, no meta).
-    logo?.setStoryProgress(0.27);
-    heroMeta?.classList.add("is-hidden");
-    panels.forEach((panel) => panel.classList.add("is-active"));
-    return;
-  }
+  // Always start like iPhone 15 / desktop: logo + Location/Somos/Desde, no copy yet.
+  activatePanel(null);
+  heroMeta?.classList.remove("is-hidden");
+  logo?.setStoryProgress(0);
 
   const getBounds = () => {
     const start = section.offsetTop;

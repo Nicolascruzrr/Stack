@@ -528,58 +528,13 @@ section{position:relative;z-index:var(--z-content);}
 }
 
 @media (prefers-reduced-motion: reduce){
-  .story{height:auto;}
-  .story__pin{position:relative;height:auto;overflow:visible;min-height:0;}
-  .story__stage{
-    position:relative;
-    display:flex;
-    flex-direction:column;
-    min-height:0;
-    padding:0;
-  }
-  .story__canvas-wrap{
-    position:absolute;
-    top:0;left:0;right:0;
-    height:100vh;
-    height:100svh;
-    height:100dvh;
-    z-index:1;
-  }
-  .story__panels{position:relative;inset:auto;z-index:2;}
+  /* Keep the same pinned story beats as motion-on — only shorten transitions.
+     Un-pinning here made tall iPhones (16 Pro Max) show every panel at once. */
   .story__panel{
-    position:relative;
-    top:auto;
-    bottom:auto;
-    left:auto!important;
-    right:auto!important;
-    width:auto;
-    max-width:none;
-    min-height:100vh;
-    min-height:100svh;
-    min-height:100dvh;
-    opacity:1;
-    visibility:visible;
-    transform:none;
-    margin:0;
-    padding:calc(var(--nav-h) + 1.25rem) var(--edge) 3.5rem;
-    justify-content:flex-end;
-    box-sizing:border-box;
-  }
-  .story__panel[data-panel="goals"],
-  .story__panel[data-panel="contact"]{
-    background:var(--black);
+    transition-duration:0.001ms !important;
   }
   .story__meta{
-    position:absolute;
-    left:0;
-    right:0;
-    top:calc(100vh - 5.5rem);
-    top:calc(100svh - 5.5rem);
-    top:calc(100dvh - 5.5rem);
-    bottom:auto;
-    width:100%;
-    padding:0;
-    z-index:3;
+    transition-duration:0.001ms !important;
   }
 }
 
@@ -1267,61 +1222,7 @@ section{position:relative;z-index:var(--z-content);}
 }
 
 @media (max-width:1100px) and (prefers-reduced-motion:reduce){
-  /* Re-assert chapter layout after the mobile story rules above. */
-  .story{height:auto;}
-  .story__pin{
-    position:relative;
-    height:auto;
-    min-height:0;
-    overflow:visible;
-    touch-action:auto;
-  }
-  .story__stage{
-    position:relative;
-    display:flex;
-    flex-direction:column;
-    min-height:0;
-    padding:0;
-  }
-  .story__canvas-wrap{
-    position:absolute;
-    top:0;left:0;right:0;
-    height:100vh;
-    height:100svh;
-    height:100dvh;
-    height:var(--story-vvh, 100dvh);
-    z-index:1;
-    touch-action:auto;
-  }
-  .story__panels{position:relative;inset:auto;z-index:2;}
-  .story__panel{
-    position:relative;
-    top:auto;
-    bottom:auto;
-    left:auto!important;
-    right:auto!important;
-    width:auto;
-    max-width:none;
-    min-height:100vh;
-    min-height:100svh;
-    min-height:100dvh;
-    min-height:var(--story-vvh, 100dvh);
-    opacity:1;
-    visibility:visible;
-    transform:none;
-    margin:0;
-    padding:calc(var(--nav-h) + 1.25rem) var(--edge) max(3rem, calc(2.25rem + env(safe-area-inset-bottom, 0px)));
-    justify-content:flex-end;
-    box-sizing:border-box;
-    gap:.85rem;
-  }
-  .story__panel.is-active{transform:none;}
-  .story__panel[data-panel="goals"],
-  .story__panel[data-panel="contact"]{
-    background:var(--black);
-  }
-  /* Match normal iPhone hero: copy + CTA at bottom, no meta strip under the button. */
-  .story__meta{display:none !important;}
+  /* Story stays pinned like iPhone 15. Only projects fall back to native swipe. */
   .work{padding:6rem 0 3rem;}
   .work__pin{min-height:auto;padding:0;overflow:visible;}
   .work__viewport{
