@@ -6,7 +6,9 @@
 /* Relative URL — works on every Safari/iPadOS without import maps. */
 import * as THREE from "./vendor/three.module.js";
 
-const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* Story logo stays fully interactive even when the OS asks for reduced motion
+   (common on iPhone 16). UI chrome elsewhere still respects prefers-reduced-motion. */
+const STORY_MOTION = true;
 
 /** True iPad / iPadOS — not iPhone. Large canvas is why Safari chokes here. */
 function isIPadDevice() {
@@ -238,8 +240,8 @@ export class StackLogo3D {
 
     this.mouse = { x: 0, y: 0 };
     this.mouseTarget = { x: 0, y: 0 };
-    this.storyProgress = REDUCED_MOTION ? 1 : 0;
-    this.storyTarget = this.storyProgress;
+    this.storyProgress = 0;
+    this.storyTarget = 0;
     this.settle = 0;
     this.settleTarget = 0;
     this.cameraCurrent = { ...CAMERA_HOME };
@@ -480,7 +482,7 @@ export class StackLogo3D {
   }
 
   _interactionEnabled() {
-    return !REDUCED_MOTION && (this.storyProgress <= 0.035 || this.storyProgress >= 0.975);
+    return STORY_MOTION && (this.storyProgress <= 0.035 || this.storyProgress >= 0.975);
   }
 
   _clearPointerState() {
@@ -630,7 +632,7 @@ export class StackLogo3D {
   }
 
   setStoryProgress(progress) {
-    this.storyTarget = REDUCED_MOTION ? 1 : clamp(progress, 0, 1);
+    this.storyTarget = clamp(progress, 0, 1);
   }
 
   _mobilePoseAt(progress) {
@@ -831,7 +833,7 @@ export class StackLogo3D {
     if (!this.running) return;
     this.time += 0.008;
 
-    this.storyProgress = lerp(this.storyProgress, this.storyTarget, REDUCED_MOTION ? 1 : 0.11);
+    this.storyProgress = lerp(this.storyProgress, this.storyTarget, 0.11);
     this.mouse.x = lerp(this.mouse.x, this.mouseTarget.x, 0.045);
     this.mouse.y = lerp(this.mouse.y, this.mouseTarget.y, 0.045);
 
@@ -840,7 +842,7 @@ export class StackLogo3D {
     this.settle = lerp(this.settle, this.settleTarget, 0.06);
 
     const interactive = this._interactionEnabled();
-    const heroSpinActive = !REDUCED_MOTION && this.storyProgress < 0.055;
+    const heroSpinActive = STORY_MOTION && this.storyProgress < 0.055;
     if (heroSpinActive && !this.dragging) {
       // One calm 360-degree revolution approximately every 23 seconds.
       this.autoRotation = (this.autoRotation + 0.0045) % (Math.PI * 2);
@@ -855,9 +857,9 @@ export class StackLogo3D {
       1 -
       smoothstep(0.035, 0.12, this.storyProgress) +
       smoothstep(0.94, 0.985, this.storyProgress);
-    const idleFloat = REDUCED_MOTION ? 0 : Math.sin(this.time * 0.72) * 0.026 * idleStrength;
-    const idlePitch = REDUCED_MOTION ? 0 : Math.sin(this.time * 0.48 + 0.7) * 0.006 * idleStrength;
-    const idleRoll = REDUCED_MOTION ? 0 : Math.sin(this.time * 0.58) * 0.0045 * idleStrength;
+    const idleFloat = Math.sin(this.time * 0.72) * 0.026 * idleStrength;
+    const idlePitch = Math.sin(this.time * 0.48 + 0.7) * 0.006 * idleStrength;
+    const idleRoll = Math.sin(this.time * 0.58) * 0.0045 * idleStrength;
 
     if (interactive) {
       if (!this.dragging) {
@@ -896,7 +898,7 @@ export class StackLogo3D {
       this.cameraCurrent[key] = lerp(
         this.cameraCurrent[key],
         cameraTarget[key],
-        REDUCED_MOTION ? 1 : 0.14
+        0.14
       );
     });
 

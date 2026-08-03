@@ -91,9 +91,8 @@ function runPreloader() {
    Smooth scroll (Lenis) + ScrollTrigger bridge
    --------------------------------------------------------- */
 function initSmoothScroll() {
-  if (REDUCED_MOTION) return null;
-  // iPad Safari already has excellent native momentum scroll.
-  // Lenis syncTouch + story gesture locking is what made it feel sticky/slow.
+  // Keep Lenis on phones even with Reduce Motion so story scrub matches iPhone 15.
+  // iPad still uses native scroll (syncTouch felt sticky there).
   if (isIPadDevice()) return null;
 
   const lenis = new Lenis({
@@ -462,54 +461,50 @@ function initParticles() {
     resizeTimer = window.setTimeout(() => {
       cancelAnimationFrame(animationFrameId);
       initialize();
-      if (REDUCED_MOTION) paintReducedMotionFrame();
-      else animate();
+      animate();
     }, 120);
   };
 
   initialize();
 
-  if (REDUCED_MOTION) {
-    paintReducedMotionFrame();
-  } else {
-    animate();
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    document.documentElement.addEventListener("mouseleave", resetPointer);
-    window.addEventListener("blur", resetPointer);
+  // Always animate — Reduce Motion on iPhone 16 was freezing the field static.
+  animate();
+  window.addEventListener("pointermove", handlePointerMove, { passive: true });
+  document.documentElement.addEventListener("mouseleave", resetPointer);
+  window.addEventListener("blur", resetPointer);
 
-    let gustSettleTimer = 0;
-    ScrollTrigger.create({
-      trigger: "#story",
-      start: "top top",
-      end: "bottom top",
-      onUpdate: (self) => {
-        const gustStart = 0.08;
-        const transitionProgress = Math.min(
-          Math.max((self.progress - gustStart) / (1 - gustStart), 0),
-          1
-        );
-        const pulse = Math.pow(Math.sin(transitionProgress * Math.PI), 0.65);
-        const direction = self.direction || 1;
+  let gustSettleTimer = 0;
+  ScrollTrigger.create({
+    trigger: "#story",
+    start: "top top",
+    end: "bottom top",
+    onUpdate: (self) => {
+      const gustStart = 0.08;
+      const transitionProgress = Math.min(
+        Math.max((self.progress - gustStart) / (1 - gustStart), 0),
+        1
+      );
+      const pulse = Math.pow(Math.sin(transitionProgress * Math.PI), 0.65);
+      const direction = self.direction || 1;
 
-        flowMotion.gustTargetX = pulse * 3.4 * direction;
-        flowMotion.gustTargetY = pulse * -0.8;
+      flowMotion.gustTargetX = pulse * 3.4 * direction;
+      flowMotion.gustTargetY = pulse * -0.8;
 
-        window.clearTimeout(gustSettleTimer);
-        gustSettleTimer = window.setTimeout(() => {
-          flowMotion.gustTargetX = 0;
-          flowMotion.gustTargetY = 0;
-        }, 280);
-      },
-      onLeave: () => {
+      window.clearTimeout(gustSettleTimer);
+      gustSettleTimer = window.setTimeout(() => {
         flowMotion.gustTargetX = 0;
         flowMotion.gustTargetY = 0;
-      },
-      onLeaveBack: () => {
-        flowMotion.gustTargetX = 0;
-        flowMotion.gustTargetY = 0;
-      },
-    });
-  }
+      }, 280);
+    },
+    onLeave: () => {
+      flowMotion.gustTargetX = 0;
+      flowMotion.gustTargetY = 0;
+    },
+    onLeaveBack: () => {
+      flowMotion.gustTargetX = 0;
+      flowMotion.gustTargetY = 0;
+    },
+  });
 
   window.addEventListener("resize", handleResize, { passive: true });
 }
