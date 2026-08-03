@@ -168,14 +168,7 @@ function initNav() {
   gsap.set(panel, { autoAlpha: 0, y: -8, scale: 0.95 });
   gsap.set(links, { autoAlpha: 0, y: 8 });
 
-  const menuTimeline = gsap.timeline({
-    paused: true,
-    onReverseComplete: () => {
-      menu.classList.remove("is-open");
-      menu.inert = true;
-      menu.setAttribute("aria-hidden", "true");
-    },
-  });
+  const menuTimeline = gsap.timeline({ paused: true });
   menuTimeline
     .to(panel, {
       autoAlpha: 1,
@@ -197,19 +190,17 @@ function initNav() {
     );
 
   function closeMenu() {
-    if (!menuOpen) return;
     menuOpen = false;
     toggle.classList.remove("is-open");
     toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-label", "Abrir menÃº");
-    if (REDUCED_MOTION) {
-      menuTimeline.progress(0);
-      menu.classList.remove("is-open");
-      menu.inert = true;
-      menu.setAttribute("aria-hidden", "true");
-    } else {
-      menuTimeline.reverse();
-    }
+    toggle.setAttribute("aria-label", "Abrir menú");
+    menu.inert = true;
+    menu.setAttribute("aria-hidden", "true");
+    menu.classList.remove("is-open");
+    // Force closed state — don't wait on reverse (can stall on iOS mid-scroll).
+    menuTimeline.pause(0);
+    gsap.set(panel, { autoAlpha: 0, y: -8, scale: 0.95 });
+    gsap.set(links, { autoAlpha: 0, y: 8 });
   }
 
   function openMenu() {
@@ -219,15 +210,19 @@ function initNav() {
     menu.inert = false;
     menu.setAttribute("aria-hidden", "false");
     toggle.setAttribute("aria-expanded", "true");
-    toggle.setAttribute("aria-label", "Cerrar menÃº");
+    toggle.setAttribute("aria-label", "Cerrar menú");
     menuTimeline.play(0);
   }
 
-  toggle.addEventListener("click", () => {
+  toggle.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     menuOpen ? closeMenu() : openMenu();
   });
 
-  menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
+  menu.querySelectorAll("a").forEach((a) => {
+    a.addEventListener("click", () => closeMenu());
+  });
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && menuOpen) closeMenu();
   });
