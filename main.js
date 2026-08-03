@@ -105,8 +105,9 @@ function initSmoothScroll() {
     syncTouchLerp: 0.085,
     touchMultiplier: 1.15,
     autoRaf: false,
-    // Keep page Lenis from eating wheel/touch while a modal scrolls.
-    prevent: (node) => Boolean(node.closest?.("#projectModal")),
+    // Nested scrollers Lenis must not steal (modal + mobile project carousel).
+    prevent: (node) =>
+      Boolean(node.closest?.("#projectModal, .work__viewport, .pm__scroll")),
   });
 
   lenis.on("scroll", ScrollTrigger.update);
@@ -823,12 +824,12 @@ function initWork() {
   const section = document.getElementById("work");
   const pin = document.getElementById("workPin");
   const track = document.getElementById("workTrack");
-  if (!section || !pin || !track || REDUCED_MOTION) return;
-  // iPad: native horizontal swipe instead of a pinned GSAP scrub.
+  if (!section || !pin || !track) return;
+  // Phones + iPad: native horizontal carousel (GSAP pin traps scroll on iPhone 16).
   if (isIPadDevice()) return;
 
   const media = gsap.matchMedia();
-  media.add("(min-width: 0px)", () => {
+  media.add("(min-width: 1101px)", () => {
     const distance = () => Math.max(track.scrollWidth - window.innerWidth, 0);
     const tween = gsap.to(track, {
       x: () => -distance(),
@@ -836,7 +837,7 @@ function initWork() {
       scrollTrigger: {
         trigger: section,
         start: "top top",
-        end: () => `+=${distance()}`,
+        end: () => `+=${Math.max(distance(), 1)}`,
         pin,
         scrub: 1,
         anticipatePin: 1,

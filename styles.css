@@ -1191,22 +1191,30 @@ section{position:relative;z-index:var(--z-content);}
   }
   .meta__label{font-size:.52rem;letter-spacing:.1em;}
   .meta__value{font-size:.62rem;max-width:18ch;}
-  .work{padding:0;}
+  .work{padding:4rem 0 3rem;}
   .work__pin{
-    min-height:100dvh;
-    padding:4.5rem 0 1.5rem;
-    overflow:hidden;
+    min-height:auto;
+    padding:0;
+    overflow:visible;
   }
-  .work__viewport{overflow:hidden;}
+  .work__viewport{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-inline:contain;
+    scrollbar-width:none;
+    touch-action:pan-x;
+  }
+  .work__viewport::-webkit-scrollbar{display:none;}
   .work__track{
     gap:1rem;
     padding-bottom:1rem;
-    scroll-snap-type:none;
-    will-change:transform;
+    scroll-snap-type:x mandatory;
+    will-change:auto;
   }
   .work__card{
     flex-basis:76vw;
     width:76vw;
+    scroll-snap-align:start;
   }
   .work__media{height:auto;aspect-ratio:3.4/3;border-radius:12px;}
   .work__meta{grid-template-columns:1fr;padding-top:1rem;}
@@ -1219,20 +1227,6 @@ section{position:relative;z-index:var(--z-content);}
   .meta__label{font-size:.52rem;letter-spacing:.1em;}
   .meta__value{font-size:.62rem;}
   .footer__bottom{flex-direction:column;align-items:flex-start;}
-}
-
-@media (max-width:1100px) and (prefers-reduced-motion:reduce){
-  /* Story stays pinned like iPhone 15. Only projects fall back to native swipe. */
-  .work{padding:6rem 0 3rem;}
-  .work__pin{min-height:auto;padding:0;overflow:visible;}
-  .work__viewport{
-    overflow-x:auto;
-    overscroll-behavior-inline:contain;
-    scrollbar-width:none;
-  }
-  .work__viewport::-webkit-scrollbar{display:none;}
-  .work__track{scroll-snap-type:x mandatory;will-change:auto;}
-  .work__card{scroll-snap-align:start;}
 }
 
 /* iPad portrait + landscape (class set in JS; width can exceed 1100 in landscape) */
