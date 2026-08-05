@@ -1001,7 +1001,7 @@ const PROJECTS = [
     client: "Abejitas Veterinaria",
     overview:
       "Veterinaria en Santo Domingo. Consultas, vacunas, cirugía, laboratorio y hotel para mascotas.",
-    url: "https://abejitasvet.com/",
+    url: "https://abejitasvet.do/",
     hero: { src: "img/abejitas-cover.jpg", alt: "Sitio web de Abejitas Veterinaria presentado en una laptop" },
     gallery: [
       { src: "img/abejitas-gallery-01.jpg", alt: "Sección Por qué elegirnos de Abejitas Veterinaria", size: "full" },
